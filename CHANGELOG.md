@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-10-17
+
+### Changed
+- Target and compile against Android 16 (API 36) to meet Google Play's target API requirement.
+
 ## [1.0.5] - 2026-07-24
 
 ### Fixed
