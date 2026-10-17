@@ -2,205 +2,186 @@ package com.salah.callblocker.ui.splash
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.salah.callblocker.ui.icons.AppIcons
-import com.salah.callblocker.ui.theme.lime_neon
-import com.salah.callblocker.ui.theme.md_dark_background
-import com.salah.callblocker.ui.theme.md_dark_onBackground
-import com.salah.callblocker.ui.theme.md_dark_onSurfaceVariant
-import com.salah.callblocker.ui.theme.on_lime
+import com.salah.callblocker.ui.kit.globStar
+import com.salah.callblocker.ui.theme.Brand
+import com.salah.callblocker.ui.theme.CType
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlin.math.min
+
+/** One number drifting right→left into the lens. Matches get "140" highlighted and break apart. */
+private data class Lane(val prefix: String, val hit: String, val rest: String, val match: Boolean, val y: Int, val delayMs: Int)
+
+private val LANES = listOf(
+    Lane("+91 ", "140", " 2210 455", true, -48, 0),
+    Lane("+91 98470 ", "", "55120", false, 0, 350),
+    Lane("+91 ", "140", " 6612 003", true, 48, 700),
+    Lane("+44 20 7946 ", "", "0018", false, -24, 1050),
+    Lane("+91 ", "140", " 9921 470", true, 24, 1400),
+)
 
 /**
- * Branded launch splash: a glowing lime shield with an expanding radar ring,
- * the app name and tagline easing in, then a clean fade-out to the dashboard.
- *
- * Kept on a fixed dark brand backdrop (independent of system light/dark) so it
- * lines up seamlessly with the cold-start system splash defined in themes.xml.
+ * "The filter": spam numbers stream into the ceramic glob-star tile; numbers
+ * matching +91 140* light up red and dissolve, others pass through. Then the
+ * pattern types out and the wordmark settles. Tap to skip.
  */
 @Composable
-fun SplashScreen(
-    onFinished: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val logoScale = remember { Animatable(0.72f) }
-    val logoAlpha = remember { Animatable(0f) }
-    val textAlpha = remember { Animatable(0f) }
-    val textShift = remember { Animatable(18f) }
-    val contentAlpha = remember { Animatable(1f) }
-
-    val pulse = rememberInfiniteTransition(label = "splash-pulse")
-    val glow by pulse.animateFloat(
-        initialValue = 0.45f,
-        targetValue = 0.95f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1400, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "glow",
-    )
-    val ring by pulse.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1900, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart,
-        ),
-        label = "ring",
-    )
+fun SplashScreen(onFinished: () -> Unit) {
+    val tile = remember { Animatable(0f) }
+    val spin = remember { Animatable(-180f) }
+    val type = remember { Animatable(0f) }
+    val brand = remember { Animatable(0f) }
+    val lanes = remember { LANES.map { Animatable(0f) } }
 
     LaunchedEffect(Unit) {
-        launch { logoAlpha.animateTo(1f, tween(420)) }
-        launch {
-            logoScale.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = 0.52f,
-                    stiffness = Spring.StiffnessLow,
-                ),
-            )
-        }
-        delay(220)
-        launch { textShift.animateTo(0f, tween(520, easing = FastOutSlowInEasing)) }
-        textAlpha.animateTo(1f, tween(620))
-        delay(900)
-        contentAlpha.animateTo(0f, tween(360))
+        launch { tile.animateTo(1f, tween(800, easing = FastOutSlowInEasing)) }
+        launch { delay(300); spin.animateTo(0f, tween(2400, easing = FastOutSlowInEasing)) }
+        lanes.forEachIndexed { i, a -> launch { delay(LANES[i].delayMs.toLong()); a.animateTo(1f, tween(2600, easing = LinearEasing)) } }
+        launch { delay(600); type.animateTo(1f, tween(700, easing = LinearEasing)) }
+        launch { delay(3000); brand.animateTo(1f, tween(700, easing = FastOutSlowInEasing)) }
+        delay(4400)
         onFinished()
     }
 
     Box(
-        modifier = modifier
+        Modifier
             .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(Color(0xFF141A09), md_dark_background),
-                    radius = 1100f,
-                ),
-            )
-            .alpha(contentAlpha.value),
-        contentAlignment = Alignment.Center,
+            .background(Brush.radialGradient(listOf(Color(0xFFF7F5F2), Brand.bone), radius = 1400f))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onFinished),
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            // ── Glowing shield logo with radar ring ──
-            Box(
-                modifier = Modifier.size(196.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize().alpha(logoAlpha.value)) {
-                    val c = Offset(size.width / 2f, size.height / 2f)
-                    val maxR = min(size.width, size.height) / 2f
+        BoxWithConstraints(Modifier.fillMaxSize()) {
+            val cy = maxHeight * 0.42f
+            val travel = maxWidth.value + 80f
 
-                    // Soft pulsing glow halo behind the badge.
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                lime_neon.copy(alpha = glow * 0.42f),
-                                Color.Transparent,
-                            ),
-                            center = c,
-                            radius = maxR,
-                        ),
-                        radius = maxR,
-                        center = c,
-                    )
-
-                    // Expanding radar ring that fades as it grows.
-                    val ringR = maxR * (0.42f + ring * 0.55f)
-                    drawCircle(
-                        color = lime_neon.copy(alpha = (1f - ring) * 0.55f),
-                        radius = ringR,
-                        center = c,
-                        style = Stroke(width = 2.dp.toPx()),
-                    )
+            // lanes (behind the tile)
+            LANES.forEachIndexed { i, lane ->
+                val p = lanes[i].value
+                val hitOn = p > 0.22f
+                val x = if (lane.match) {
+                    // stop inside the tile and dissolve
+                    val stop = 0.5f
+                    val q = (p / stop).coerceAtMost(1f)
+                    maxWidth.value + 10f - q * (maxWidth.value / 2f + 70f)
+                } else {
+                    maxWidth.value + 10f - p * travel * 1.9f
                 }
-
-                // Lime badge + dark shield glyph.
-                Box(
+                val gone = if (lane.match) ((p - 0.42f) / 0.14f).coerceIn(0f, 1f) else 0f
+                Text(
+                    buildAnnotatedString {
+                        withStyle(SpanStyle(textDecoration = if (lane.match && hitOn) TextDecoration.LineThrough else null)) {
+                            append(lane.prefix)
+                            if (lane.hit.isNotEmpty()) withStyle(
+                                SpanStyle(
+                                    color = if (hitOn) Color.White else Brand.mute,
+                                    background = if (hitOn) Brand.red else Color.Transparent,
+                                ),
+                            ) { append(lane.hit) }
+                            append(lane.rest)
+                        }
+                    },
+                    style = CType.monoL,
+                    color = when {
+                        !lane.match -> Brand.ink
+                        hitOn -> Brand.red
+                        else -> Brand.mute
+                    },
+                    softWrap = false,
                     modifier = Modifier
-                        .size(108.dp)
-                        .scale(logoScale.value)
-                        .alpha(logoAlpha.value)
-                        .clip(CircleShape)
-                        .background(lime_neon),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = AppIcons.shield,
-                        contentDescription = null,
-                        tint = on_lime,
-                        modifier = Modifier.size(58.dp),
-                    )
-                }
+                        .offset(x = x.dp, y = cy + lane.y.dp - 11.dp)
+                        .alpha(if (p == 0f) 0f else 1f - gone)
+                        .blur((gone * 8f).dp)
+                        .scale(1f - gone * 0.15f),
+                )
             }
 
-            // ── Wordmark + tagline ──
-            Spacer(Modifier.size(28.dp))
-            Text(
-                text = "Globber",
-                style = MaterialTheme.typography.displayMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 46.sp,
-                    letterSpacing = (-1.5).sp,
-                ),
-                color = md_dark_onBackground,
-                modifier = Modifier
-                    .offset(y = textShift.value.dp)
-                    .alpha(textAlpha.value),
-            )
-            Spacer(Modifier.size(10.dp))
-            Text(
-                text = "Block spam by pattern, not just by number",
-                style = MaterialTheme.typography.bodyMedium,
-                color = md_dark_onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .offset(y = textShift.value.dp)
-                    .alpha(textAlpha.value * 0.9f)
-                    .padding(horizontal = 48.dp),
-            )
+            // tile + pattern pill
+            Column(
+                Modifier.align(Alignment.TopCenter).offset(y = cy - 84.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Canvas(
+                    Modifier
+                        .size(168.dp)
+                        .graphicsLayer { val s = 0.4f + 0.6f * tile.value; scaleX = s; scaleY = s }
+                        .shadow(28.dp * tile.value, androidx.compose.foundation.shape.RoundedCornerShape(42.dp), clip = false),
+                ) {
+                    drawRoundRect(
+                        Brush.verticalGradient(listOf(Brand.boneTop, Brand.boneBottom)),
+                        cornerRadius = CornerRadius(42.dp.toPx()),
+                    )
+                    val w = size.width
+                    globStar(armHalf = w * 0.216f, stroke = w * 0.1f, eye = w * 0.0625f, rotation = spin.value)
+                }
+                Box(Modifier.size(26.dp))
+                val shown = "+91 140*".take((type.value * 8).toInt())
+                Row(
+                    Modifier
+                        .alpha(if (type.value > 0f) 1f else 0f)
+                        .shadow(6.dp, CircleShape, clip = false)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(shown.padEnd(8, ' '), style = CType.mono, color = Brand.ink)
+                }
+            }
+        }
+
+        // brand
+        Column(
+            Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 36.dp)
+                .alpha(brand.value)
+                .offset(y = ((1f - brand.value) * 12f).dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("Globber", style = CType.display, color = Brand.ink)
+            Text("Spam caught by its pattern. Real calls ring.", style = CType.meta, color = Color(0xFF6B6660))
+            Box(Modifier.size(28.dp))
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF1E9E5A)))
+                Text("Screening on this phone · no internet", style = CType.label, color = Color(0xFF6B6660))
+            }
         }
     }
 }

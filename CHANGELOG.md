@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Full redesign in the new ceramic design system (bone, ink, one signal red), light and dark:
+  "The filter" splash, a three-scene onboarding story, floating bottom navigation,
+  and rebuilt Home, Rules, Blocked calls and Settings screens.
+- Rule sheet has a live number tester and match-type / action pickers.
+- Blocked-call detail sheet: always allow the number, block numbers like it, copy.
+
+### Added
+- Allowed numbers: per-number exceptions that ring regardless of rules.
+- Let contacts through: saved contacts always ring (optional, asks for READ_CONTACTS).
+
 ## [1.0.6] - 2026-10-17
 
 ### Changed
