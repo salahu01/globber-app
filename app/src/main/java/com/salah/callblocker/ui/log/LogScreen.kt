@@ -138,7 +138,7 @@ fun LogScreen(
             if (calls.isNotEmpty()) item {
                 CCard(Modifier.fillMaxWidth().padding(horizontal = Gutter)) {
                     Row(Modifier.height(IntrinsicSize.Min)) {
-                        Stat("Today", "$todayN", red = true, modifier = Modifier.weight(1f))
+                        Stat("Today", "$todayN", red = todayN > 0, modifier = Modifier.weight(1f))
                         Box(Modifier.width(1.dp).fillMaxHeight().background(c.line))
                         Stat("7 days", "$weekN", modifier = Modifier.weight(1f).padding(start = 14.dp))
                         Box(Modifier.width(1.dp).fillMaxHeight().background(c.line))

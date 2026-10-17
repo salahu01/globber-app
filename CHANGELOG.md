@@ -7,12 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-17
+
 ### Changed
 - Full redesign in the new ceramic design system (bone, ink, one signal red), light and dark:
   "The filter" splash, a three-scene onboarding story, floating bottom navigation,
   and rebuilt Home, Rules, Blocked calls and Settings screens.
 - Rule sheet has a live number tester and match-type / action pickers.
 - Blocked-call detail sheet: always allow the number, block numbers like it, copy.
+- Premium polish: Plus Jakarta Sans, frosted-glass dock and pinned title bars,
+  glossy buttons, focus-glow inputs, vector empty states, spring press feedback
+  and haptics.
+- Rules: summary card, active/paused sections, swipe left to delete, per-rule
+  7-day sparkline.
+- Blocked calls: stats strip, sticky day headers and a timeline layout.
+- Release builds are now shrunk and optimised with R8.
 
 ### Added
 - Allowed numbers: per-number exceptions that ring regardless of rules.
@@ -111,7 +120,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Block log of screened calls.
 - Dark neon-lime bento UI with a custom icon set.
 
-[Unreleased]: https://github.com/salahu01/Globber/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/salahu01/Globber/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/salahu01/Globber/compare/v1.0.6...v1.1.0
 [1.0.4]: https://github.com/salahu01/Globber/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/salahu01/Globber/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/salahu01/Globber/compare/v1.0.1...v1.0.2

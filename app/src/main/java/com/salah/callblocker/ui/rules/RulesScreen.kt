@@ -207,7 +207,7 @@ private fun Summary(active: Int, total: Int, week: Int) {
             }
             Box(Modifier.width(1.dp).height(44.dp).background(c.line))
             Column(Modifier.weight(1f).padding(start = 16.dp)) {
-                Text("$week", style = CType.numL.copy(fontSize = CType.numL.fontSize * 1.4f), color = c.red)
+                Text("$week", style = CType.numL.copy(fontSize = CType.numL.fontSize * 1.4f), color = if (week > 0) c.red else c.text)
                 Text("calls stopped · 7 days", style = CType.meta, color = c.text2)
             }
         }
