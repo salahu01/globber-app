@@ -4,7 +4,7 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 
-    <!-- Cold-start system splash: ceramic glob star on bone, hands off to Theme.CallBlocker. -->
+    <!-- Cold-start system splash: plain bone (no icon) so it blends into the animated splash. -->
     <style name="Theme.CallBlocker.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>

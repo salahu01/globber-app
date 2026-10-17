@@ -1,21 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Intentionally empty: the system splash is a plain bone screen so it hands off
+     seamlessly to the animated Compose splash (ui/splash/SplashScreen.kt). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group android:pivotX="54" android:pivotY="54" android:rotation="0"><path android:strokeColor="#FF141414" android:strokeWidth="7.2" android:strokeLineCap="round" android:pathData="M54,38 L54,70" /></group>
-    <group android:pivotX="54" android:pivotY="54" android:rotation="60"><path android:strokeColor="#FF141414" android:strokeWidth="7.2" android:strokeLineCap="round" android:pathData="M54,38 L54,70" /></group>
-    <group android:pivotX="54" android:pivotY="54" android:rotation="120"><path android:strokeColor="#FF141414" android:strokeWidth="7.2" android:strokeLineCap="round" android:pathData="M54,38 L54,70" /></group>
-    <!-- Red eye: radial glass, no highlight -->
-    <path android:pathData="M54,54m-4.6,0a4.6,4.6 0,1 1,9.2 0a4.6,4.6 0,1 1,-9.2 0">
-        <aapt:attr name="android:fillColor">
-            <gradient android:type="radial" android:centerX="54" android:centerY="52.3" android:gradientRadius="5.9">
-                <item android:offset="0" android:color="#FFFF7A63" />
-                <item android:offset="0.45" android:color="#FFE8392B" />
-                <item android:offset="1" android:color="#FF6E0F09" />
-            </gradient>
-        </aapt:attr>
-    </path>
+    <path android:fillColor="#00000000" android:pathData="M0,0h1v1h-1z" />
 </vector>

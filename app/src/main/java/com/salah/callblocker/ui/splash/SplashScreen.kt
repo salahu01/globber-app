@@ -83,7 +83,9 @@ fun SplashScreen(onFinished: () -> Unit) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.radialGradient(listOf(Color(0xFFF7F5F2), Brand.bone), radius = 1400f))
+            // Starts as flat bone (same as the system splash) and warms into the glow.
+            .background(Brand.bone)
+            .background(Brush.radialGradient(listOf(Color(0xFFF7F5F2), Brand.bone), radius = 1400f), alpha = tile.value)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onFinished),
     ) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
