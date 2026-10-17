@@ -18,7 +18,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.salah.callblocker"
+        applicationId = "app.globber"
         minSdk = 29
         targetSdk = 36
         versionCode = 7
