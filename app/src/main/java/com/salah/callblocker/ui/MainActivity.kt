@@ -164,6 +164,12 @@ class MainActivity : ComponentActivity() {
             }
             CallBlockerTheme(darkTheme = dark) {
                 Surface(Modifier.fillMaxSize(), color = LocalCeramic.current.bg) {
+                    if (phase == Phase.APP) {
+                        val c = LocalCeramic.current
+                        val top = if (c.isDark) Color(0xFF36333C) else Color(0xFFFFFFFF)
+                        val bottom = if (c.isDark) Color(0xFF2E100C) else Color(0xFFCDB39C)
+                        Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(top, c.bg, bottom))))
+                    }
                     Crossfade(phase, animationSpec = tween(450), label = "phase") { p ->
                         when (p) {
                             Phase.SPLASH -> SplashScreen(onFinished = {
