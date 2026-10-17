@@ -1,5 +1,10 @@
 package com.salah.callblocker.ui.rules
 
+import com.salah.callblocker.ui.kit.fieldSurface
+import com.salah.callblocker.ui.kit.FieldIcon
+import com.salah.callblocker.ui.kit.glyph
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.shadow
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -129,15 +134,13 @@ fun RuleSheet(
 
             Field("Match type") {
                 Box(Modifier.offset(x = (-20).dp).fillMaxWidth()) {
-                    ChipRow(com.salah.callblocker.ui.kit.PatternTypesUi.map { it to it.label }, type, { type = it; error = null })
+                    ChipRow(com.salah.callblocker.ui.kit.PatternTypesUi.map { it to it.label }, type, { type = it; error = null }) { t -> com.salah.callblocker.ui.kit.ChipGlyph(t.glyph) }
                 }
             }
 
             Field("Test a number") {
                 Row(
-                    Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp))
-                        .background(if (hit) c.redBg else c.surface2)
-                        .then(if (hit) Modifier.border(1.dp, c.red.copy(alpha = 0.4f), RoundedCornerShape(16.dp)) else Modifier)
+                    Modifier.fillMaxWidth().fieldSurface(focused = false, error = hit, shape = RoundedCornerShape(20.dp))
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -158,15 +161,19 @@ fun RuleSheet(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     RuleAction.entries.forEach { a ->
                         val on = a == action
+                        val edge by androidx.compose.animation.animateColorAsState(if (on) c.text.copy(alpha = 0.7f) else c.line, label = "act")
+                        val tint by androidx.compose.animation.animateColorAsState(if (on) c.red else c.text2, label = "actTint")
                         Column(
-                            Modifier.weight(1f).clip(RoundedCornerShape(16.dp))
-                                .background(if (on) c.surface else c.surface2)
-                                .border(if (on) 1.5.dp else 1.dp, if (on) c.ink else c.hair, RoundedCornerShape(16.dp))
+                            Modifier.weight(1f)
+                                .shadow(if (on) 8.dp else 0.dp, RoundedCornerShape(18.dp))
+                                .clip(RoundedCornerShape(18.dp))
+                                .background(c.surface)
+                                .border(if (on) 1.5.dp else 1.dp, edge, RoundedCornerShape(18.dp))
                                 .pressable { action = a }.padding(vertical = 12.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(6.dp),
                         ) {
-                            Icon(a.icon, null, tint = if (on) c.red else c.text2, modifier = Modifier.size(22.dp))
+                            Icon(a.icon, null, tint = tint, modifier = Modifier.size(22.dp))
                             Text(a.label, style = CType.label, color = if (on) c.text else c.text2)
                         }
                     }
@@ -224,18 +231,18 @@ private fun InputPill(
     keyboard: KeyboardType = KeyboardType.Text,
 ) {
     val c = LocalCeramic.current
+    var focused by remember { mutableStateOf(false) }
     Row(
-        modifier.fillMaxWidth().height(52.dp).clip(CircleShape).background(c.surface2)
-            .then(if (error) Modifier.border(1.5.dp, c.red, CircleShape) else Modifier)
-            .padding(horizontal = 16.dp),
+        modifier.fillMaxWidth().height(54.dp).fieldSurface(focused, error)
+            .padding(start = 7.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(icon, null, tint = c.text2, modifier = Modifier.size(18.dp))
+        FieldIcon(icon, focused)
         Box(Modifier.weight(1f)) {
             if (value.isEmpty()) Text(placeholder, style = style, color = c.text2)
             BasicTextField(value, onChange, singleLine = true, textStyle = style.copy(color = c.text), cursorBrush = SolidColor(c.red),
-                keyboardOptions = KeyboardOptions(keyboardType = keyboard), modifier = Modifier.fillMaxWidth())
+                keyboardOptions = KeyboardOptions(keyboardType = keyboard), modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused })
         }
     }
 }

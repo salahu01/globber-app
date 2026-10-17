@@ -1,5 +1,8 @@
 package com.salah.callblocker.ui
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import com.salah.callblocker.ui.kit.glass
 import android.Manifest
 import android.app.role.RoleManager
 import android.os.Build
@@ -46,7 +49,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import com.salah.callblocker.ui.kit.globStarIcon
 import androidx.compose.material.icons.outlined.Settings as OutlinedSettings
-import androidx.compose.material.icons.outlined.SpaceDashboard as OutlinedDashboard
+import androidx.compose.material.icons.outlined.Home as OutlinedHome
 import androidx.compose.material.icons.outlined.WatchLater as OutlinedWatchLater
 import androidx.compose.material.icons.rounded.WatchLater
 import androidx.compose.material.icons.rounded.Check
@@ -56,7 +59,7 @@ import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.PhoneDisabled
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.SpaceDashboard
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Call
@@ -136,7 +139,7 @@ import kotlinx.coroutines.launch
 
 /** [icon] is the filled glyph for the active tab, [outline] the outlined one for the rest. */
 private enum class Tab(val title: String, val icon: ImageVector, val outline: ImageVector) {
-    HOME("Home", Icons.Rounded.SpaceDashboard, Icons.Outlined.OutlinedDashboard),
+    HOME("Home", Icons.Rounded.Home, Icons.Outlined.OutlinedHome),
     RULES("Rules", globStarIcon(3f), globStarIcon(1.7f)),
     LOG("Log", Icons.Rounded.WatchLater, Icons.Outlined.OutlinedWatchLater),
     SETTINGS("Settings", Icons.Rounded.Settings, Icons.Outlined.OutlinedSettings),
@@ -248,12 +251,17 @@ private fun GlobberApp(role: RoleState) {
 
     BackHandler(enabled = tab != Tab.HOME) { tab = Tab.HOME }
 
-    CompositionLocalProvider(LocalAlerts provides alerts) {
+    CompositionLocalProvider(LocalAlerts provides alerts, com.salah.callblocker.ui.kit.LocalHaze provides remember { HazeState() }) {
         val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 96.dp
         val pad = PaddingValues(top = top, bottom = bottom)
+        val navHaze = com.salah.callblocker.ui.kit.LocalHaze.current
         Box(Modifier.fillMaxSize()) {
-            AnimatedContent(tab, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "tab") { t ->
+            AnimatedContent(tab, transitionSpec = {
+                val dir = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                (fadeIn(tween(260, delayMillis = 60)) + androidx.compose.animation.slideInHorizontally(tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { dir * it / 14 }) togetherWith
+                    (fadeOut(tween(140)) + androidx.compose.animation.slideOutHorizontally(tween(240)) { -dir * it / 14 })
+            }, label = "tab") { t ->
                 when (t) {
                     Tab.HOME -> DashboardScreen(
                         roleHeld = role.held, allowList = allow, onRequestRole = role.request,
@@ -275,7 +283,7 @@ private fun GlobberApp(role: RoleState) {
                     )
                 }
             }
-            BottomNav(tab, { tab = it }, Modifier.align(Alignment.BottomCenter))
+            BottomNav(tab, { tab = it }, navHaze, Modifier.align(Alignment.BottomCenter))
             AlertHost(alerts)
         }
 
@@ -334,23 +342,31 @@ private fun GlobberApp(role: RoleState) {
  * (the pressed tile grows and lifts, its neighbours grow a little).
  */
 @Composable
-private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
+private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, haze: HazeState, modifier: Modifier = Modifier) {
     val c = LocalCeramic.current
     var pressed by remember { mutableStateOf<Int?>(null) }
     val shape = RoundedCornerShape(percent = 50)
     Box(modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 14.dp), contentAlignment = Alignment.BottomCenter) {
+        Box {
+        // Frosted glass sits on its own layer so magnified tiles can still rise above the bar.
+        Box(
+            Modifier.matchParentSize()
+                .shadow(28.dp, shape, ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.3f))
+                .clip(shape)
+                .glass(haze, if (c.isDark) 0.45f else 0.5f)
+                .border(1.dp, if (c.isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.9f), shape),
+        )
         Row(
             Modifier
-                .shadow(28.dp, shape, ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.3f))
-                // background(shape) instead of clip so magnified tiles can rise above the bar
-                .background(c.surface.copy(alpha = if (c.isDark) 0.9f else 0.82f), shape)
-                .border(1.dp, if (c.isDark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.9f), shape)
                 .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
             Tab.entries.forEachIndexed { i, t ->
                 val on = t == current
+                val tileBg by androidx.compose.animation.animateColorAsState(if (on) c.ink else c.surface2, tween(220), label = "tile")
+                val tileFg by androidx.compose.animation.animateColorAsState(if (on) c.onInk else c.text, tween(220), label = "tileFg")
+                val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
                 val dist = pressed?.let { kotlin.math.abs(it - i) }
                 val target = when (dist) { 0 -> 1.28f; 1 -> 1.1f; else -> 1f }
                 val scale by animateFloatAsState(target, spring(dampingRatio = 0.55f, stiffness = 420f), label = "mag")
@@ -365,22 +381,23 @@ private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier 
                             .size(52.dp)
                             .shadow(if (on) 10.dp else 3.dp, CircleShape)
                             .clip(CircleShape)
-                            .background(if (on) c.ink else c.surface2)
+                            .background(tileBg)
                             .pointerInput(i) {
                                 detectTapGestures(
                                     onPress = { pressed = i; tryAwaitRelease(); pressed = null },
-                                    onTap = { onSelect(t) },
+                                    onTap = { if (!on) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onSelect(t) },
                                 )
                             }
                             .semantics { contentDescription = t.title; role = Role.Tab; selected = on },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(if (on) t.icon else t.outline, null, tint = if (on) c.onInk else c.text, modifier = Modifier.size(24.dp))
+                        Icon(if (on) t.icon else t.outline, null, tint = tileFg, modifier = Modifier.size(24.dp))
                     }
                     Box(Modifier.height(6.dp))
                     Box(Modifier.size(5.dp).clip(CircleShape).background(if (on) c.text else Color.Transparent))
                 }
             }
+        }
         }
     }
 }
