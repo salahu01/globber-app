@@ -276,11 +276,6 @@ R.home=()=>{const tr=topRule();return`
   <div class="hd st"><div class="brand-m"><span class="logo">${appIcon("lgo")}</span><div class="stack-1"><b class="t-h">Globber</b><span class="t-meta mute">Sat, 17 Oct</span></div></div>
     <button class="prot press ${S.role?"":"off"}" id="protPill"><i></i><b class="t-label">${S.role?"Protected":"Not screening"}</b></button></div>
   ${S.role?"":`<div class="banner st"><span class="tile warn">${ic("warning")}</span><div class="grow stack-1"><b class="t-num">Calls aren't being screened</b><span class="t-meta mute">Set Globber as call screening app</span></div><button class="btn sm brand press" id="fixRole">Fix</button></div>`}
-  <div class="stg home-stg st"><div class="hero idle ${S.role?"":"off"}" id="homeHero"><div class="bb cer-hero">${appIcon("hm")}</div><div class="shadow cer-sh"></div></div><div class="floor"></div>
-    <div class="fl a"><span class="tile warn">${ic("forbidden","xs")}</span><b class="t-num" id="stgCount">${todayCount()} blocked today</b></div>
-    <div class="fl b"><span class="tile acc">${ic("filter","xs")}</span><b class="t-label">${activeRules()} patterns live</b></div>
-    <div class="fl c"><span class="tile ok">${ic("users","xs")}</span><b class="t-label">${S.contacts?"Contacts allowed":"Contacts off"}</b></div>
-    <button class="btn sm ghost press sim" id="sim">${ic("incoming","s")} Simulate spam call</button></div>
   <div class="grid2 st">
     <div class="kpi hot"><div class="row"><span class="tile sm">${ic("forbidden","s")}</span><span class="t-label mute">Today</span></div><b class="t-num-l" id="kToday">${todayCount()}</b><span class="t-meta mute">calls blocked</span></div>
     <div class="kpi"><div class="row"><span class="tile sm acc">${ic("calendar","s")}</span><span class="t-label mute">7 days</span></div><b class="t-num-l" id="kWeek">${weekCount()}</b><span class="t-meta mute">blocked this week</span></div>
@@ -288,8 +283,9 @@ R.home=()=>{const tr=topRule();return`
     <button class="kpi press" id="topR"><div class="row"><span class="tile sm warn">${ic("star","s")}</span>${ic("chevron","xs")}</div><b class="t-num num-call ell">${tr.pattern}</b><span class="t-meta mute">top rule · ${tr.hits} hits</span></button></div>
   <div class="card st"><div class="sec"><span class="t-label">This week</span><span class="t-label mute">${weekCount()} blocked</span></div><div class="chart">${weekBars()}</div></div>
   <div class="sec st"><span class="t-label">Recent activity</span><button class="t-label acc-t" data-go="log">See all</button></div>
-  ${S.log.length?`<div class="txcard st">${S.log.slice(0,3).map(logRow).join("")}</div>`:`<div class="card empty st">${ic("shield","l")}<b class="t-h">No blocked calls yet</b><span class="t-meta mute">They'll appear here the moment a rule fires.</span></div>`}`};
-A.home=()=>{$("#fixRole")&&($("#fixRole").onclick=()=>roleDialog(ok=>{if(ok){S.role=true;rerender();heroReact("hop","#homeHero")}}));
+  ${S.log.length?`<div class="txcard st">${S.log.slice(0,3).map(logRow).join("")}</div>`:`<div class="card empty st">${ic("shield","l")}<b class="t-h">No blocked calls yet</b><span class="t-meta mute">They'll appear here the moment a rule fires.</span></div>`}
+  <button class="btn ghost press st" id="sim">${ic("incoming","s")} Simulate a spam call</button>`};
+A.home=()=>{$("#fixRole")&&($("#fixRole").onclick=()=>roleDialog(ok=>{if(ok){S.role=true;rerender()}}));
   $("#protPill").onclick=()=>{hap("light");S.role?island("Protected",`${activeRules()} rules · ${S.contacts?"contacts allowed":"contacts not allowed"}`,"shield","var(--ok)"):roleDialog(ok=>{if(ok){S.role=true;rerender()}})};
   $("#topR").onclick=()=>ruleSheet(topRule());$("#sim").onclick=simulateCall;bindLogRows()};
 
@@ -302,10 +298,10 @@ function simulateCall(){const n=SIM[S.simIdx%SIM.length];S.simIdx++;const r=S.ru
    <div class="ans"><span class="r">${ic("endcall")}</span><span>${ic("call")}</span></div>`;
   PH.appendChild(o);SFX.ring();hap("medium");
   if(!S.role||!r){setTimeout(()=>{o.classList.add("out");setTimeout(()=>o.remove(),450);
-      island(S.role?"Call let through":"Not screening",S.role?"No rule matched this number":"Set Globber as call screening app first",S.role?"call":"warning",S.role?"var(--info)":"var(--warn)");SFX.alert();heroReact("stall","#homeHero")},1500);return}
+      island(S.role?"Call let through":"Not screening",S.role?"No rule matched this number":"Set Globber as call screening app first",S.role?"call":"warning",S.role?"var(--info)":"var(--warn)");SFX.alert()},1500);return}
   setTimeout(()=>{o.classList.add("blocked");SFX.block()},900);
   setTimeout(()=>{o.classList.add("out");setTimeout(()=>o.remove(),450);r.hits++;S.log.unshift({id:Date.now(),number:n,rule:r.id,t:TODAY.getTime()+S.simIdx*60000});
-    if(S.scr==="home"){rerender();heroReact("block","#homeHero")}
+    if(S.scr==="home")rerender();
     if(S.notify)island("Blocked "+n,`Matched ${r.pattern} · ${ACTS[r.action][3]}`,"forbidden","var(--warn)",3200,{l:"View",f:()=>go("log")})},2600)}
 
 /* ================= RULES ================= */
