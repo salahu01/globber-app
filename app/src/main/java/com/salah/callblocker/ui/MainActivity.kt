@@ -2,7 +2,6 @@ package com.salah.callblocker.ui
 
 import android.Manifest
 import android.app.role.RoleManager
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -51,7 +50,6 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
-import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.PhoneDisabled
 import androidx.compose.material.icons.rounded.Settings
@@ -227,13 +225,6 @@ private fun GlobberApp(role: RoleState) {
             alerts.show(AlertMsg("Rules imported", "Added to your list", Icons.Rounded.FileDownload, Tone.Ok))
         }
     }
-    val contactsLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        settingsVm.setLetContacts(granted)
-        alerts.show(
-            if (granted) AlertMsg("Contacts let through", "Saved contacts will always ring", Icons.Rounded.Group, Tone.Ok)
-            else AlertMsg("Permission denied", "Contacts can't bypass rules", Icons.Rounded.WarningAmber, Tone.Red),
-        )
-    }
     val notifLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
     LaunchedEffect(Unit) { if (Build.VERSION.SDK_INT >= 33) notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) }
 
@@ -255,13 +246,6 @@ private fun GlobberApp(role: RoleState) {
                     Tab.LOG -> LogScreen(allow, onOpenCall = { openCall = it }, onConfirmClear = { n, ok -> confirm = "$n" to ok }, contentPadding = pad)
                     Tab.SETTINGS -> SettingsScreen(
                         vm = settingsVm, roleHeld = role.held, ruleCount = rules.size, onRequestRole = role.request,
-                        onLetContacts = { on ->
-                            if (!on) settingsVm.setLetContacts(false)
-                            else if (context.checkSelfPermission(Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
-                                settingsVm.setLetContacts(true)
-                                alerts.show(AlertMsg("Contacts let through", "Saved contacts will always ring", Icons.Rounded.Group, Tone.Ok))
-                            } else contactsLauncher.launch(Manifest.permission.READ_CONTACTS)
-                        },
                         onHiddenChanged = { on ->
                             alerts.show(AlertMsg(if (on) "Hidden numbers blocked" else "Hidden numbers allowed", "Applies to private and withheld IDs",
                                 if (on) Icons.Rounded.PhoneDisabled else Icons.Rounded.Call, if (on) Tone.Red else Tone.Info))

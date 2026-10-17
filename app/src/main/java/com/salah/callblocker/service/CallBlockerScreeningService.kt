@@ -38,10 +38,8 @@ class CallBlockerScreeningService : CallScreeningService() {
             val ctx = applicationContext
             val settings = CallBlockerApp.settings(ctx)
 
-            // Exceptions first: allow-listed numbers and (optionally) saved contacts always ring.
-            if (RuleMatcher.national(raw) in settings.allowListNow() ||
-                (settings.letContactsNow() && Contacts.isSaved(ctx, raw))
-            ) {
+            // Exceptions first: allow-listed numbers always ring.
+            if (RuleMatcher.national(raw) in settings.allowListNow()) {
                 respondToCall(callDetails, CallResponse.Builder().build())
                 return@launch
             }

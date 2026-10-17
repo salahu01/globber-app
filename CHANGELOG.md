@@ -16,7 +16,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Allowed numbers: per-number exceptions that ring regardless of rules.
-- Let contacts through: saved contacts always ring (optional, asks for READ_CONTACTS).
 
 ## [1.0.6] - 2026-10-17
 

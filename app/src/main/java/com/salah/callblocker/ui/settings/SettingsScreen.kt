@@ -18,7 +18,6 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
-import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.NotificationsNone
 import androidx.compose.material.icons.rounded.PhoneDisabled
@@ -59,7 +58,6 @@ fun SettingsScreen(
     roleHeld: Boolean,
     ruleCount: Int,
     onRequestRole: () -> Unit,
-    onLetContacts: (Boolean) -> Unit,
     onHiddenChanged: (Boolean) -> Unit,
     onOpenAllowed: () -> Unit,
     onExport: () -> Unit,
@@ -70,7 +68,6 @@ fun SettingsScreen(
     val notify by vm.notifyOnBlock.collectAsStateWithLifecycle()
     val hidden by vm.blockUnknown.collectAsStateWithLifecycle()
     val theme by vm.themeMode.collectAsStateWithLifecycle()
-    val contacts by vm.letContacts.collectAsStateWithLifecycle()
     val allow by vm.allowList.collectAsStateWithLifecycle()
 
     Column(
@@ -100,10 +97,6 @@ fun SettingsScreen(
 
         SectionLabel("Calls")
         CListCard {
-            CRow({ Tile(Icons.Rounded.Group, Tone.Info) }, "Let contacts through", if (contacts) "Saved contacts always ring" else "Needs contacts permission") {
-                CToggle(contacts, onLetContacts)
-            }
-            CRowDivider()
             CRow({ Tile(Icons.Rounded.PhoneDisabled, Tone.Red) }, "Block hidden numbers", "Private or withheld caller ID") {
                 CToggle(hidden, { vm.setBlockUnknown(it); onHiddenChanged(it) })
             }
