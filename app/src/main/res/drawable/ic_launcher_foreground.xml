@@ -6,13 +6,13 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <!-- Glob star, flat ink -->
-    <group android:pivotX="54" android:pivotY="54" android:rotation="0"><path android:strokeColor="#FF141414" android:strokeWidth="10.5" android:strokeLineCap="round" android:pathData="M54,27 L54,81" /></group>
-    <group android:pivotX="54" android:pivotY="54" android:rotation="60"><path android:strokeColor="#FF141414" android:strokeWidth="10.5" android:strokeLineCap="round" android:pathData="M54,27 L54,81" /></group>
-    <group android:pivotX="54" android:pivotY="54" android:rotation="120"><path android:strokeColor="#FF141414" android:strokeWidth="10.5" android:strokeLineCap="round" android:pathData="M54,27 L54,81" /></group>
+    <group android:pivotX="54" android:pivotY="54" android:rotation="0"><path android:strokeColor="#FF141414" android:strokeWidth="7.2" android:strokeLineCap="round" android:pathData="M54,38 L54,70" /></group>
+    <group android:pivotX="54" android:pivotY="54" android:rotation="60"><path android:strokeColor="#FF141414" android:strokeWidth="7.2" android:strokeLineCap="round" android:pathData="M54,38 L54,70" /></group>
+    <group android:pivotX="54" android:pivotY="54" android:rotation="120"><path android:strokeColor="#FF141414" android:strokeWidth="7.2" android:strokeLineCap="round" android:pathData="M54,38 L54,70" /></group>
     <!-- Red eye: radial glass, no highlight -->
-    <path android:pathData="M54,54m-7.4,0a7.4,7.4 0,1 1,14.8 0a7.4,7.4 0,1 1,-14.8 0">
+    <path android:pathData="M54,54m-4.6,0a4.6,4.6 0,1 1,9.2 0a4.6,4.6 0,1 1,-9.2 0">
         <aapt:attr name="android:fillColor">
-            <gradient android:type="radial" android:centerX="54" android:centerY="51.3" android:gradientRadius="9.5">
+            <gradient android:type="radial" android:centerX="54" android:centerY="52.3" android:gradientRadius="5.9">
                 <item android:offset="0" android:color="#FFFF7A63" />
                 <item android:offset="0.45" android:color="#FFE8392B" />
                 <item android:offset="1" android:color="#FF6E0F09" />
