@@ -63,7 +63,16 @@ private val LANES = listOf(
  * pattern types out and the wordmark settles. Tap to skip.
  */
 @Composable
-fun SplashScreen(onFinished: () -> Unit) {
+fun SplashScreen(dark: Boolean = false, onFinished: () -> Unit) {
+    // Light = bone ceramic; dark = the app's night palette with an inverted (light) star.
+    val bg = if (dark) Color(0xFF0B0B0A) else Brand.bone
+    val glow = if (dark) Color(0xFF1C1B18) else Color(0xFFF7F5F2)
+    val ink = if (dark) Color(0xFFF3F1EB) else Brand.ink
+    val mute = if (dark) Color(0xFF6E6A62) else Brand.mute
+    val sub = if (dark) Color(0xFFA29E94) else Color(0xFF6B6660)
+    val tileTop = if (dark) Color(0xFF2A2925) else Brand.boneTop
+    val tileBottom = if (dark) Color(0xFF151412) else Brand.boneBottom
+    val pill = if (dark) Color(0xFF1C1B18) else Color.White
     val tile = remember { Animatable(0f) }
     val spin = remember { Animatable(-180f) }
     val type = remember { Animatable(0f) }
@@ -84,8 +93,8 @@ fun SplashScreen(onFinished: () -> Unit) {
         Modifier
             .fillMaxSize()
             // Starts as flat bone (same as the system splash) and warms into the glow.
-            .background(Brand.bone)
-            .background(Brush.radialGradient(listOf(Color(0xFFF7F5F2), Brand.bone), radius = 1400f), alpha = tile.value)
+            .background(bg)
+            .background(Brush.radialGradient(listOf(glow, bg), radius = 1400f), alpha = tile.value)
             .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onFinished),
     ) {
         BoxWithConstraints(Modifier.fillMaxSize()) {
@@ -111,7 +120,7 @@ fun SplashScreen(onFinished: () -> Unit) {
                             append(lane.prefix)
                             if (lane.hit.isNotEmpty()) withStyle(
                                 SpanStyle(
-                                    color = if (hitOn) Color.White else Brand.mute,
+                                    color = if (hitOn) Color.White else mute,
                                     background = if (hitOn) Brand.red else Color.Transparent,
                                 ),
                             ) { append(lane.hit) }
@@ -120,9 +129,9 @@ fun SplashScreen(onFinished: () -> Unit) {
                     },
                     style = CType.monoL,
                     color = when {
-                        !lane.match -> Brand.ink
+                        !lane.match -> ink
                         hitOn -> Brand.red
-                        else -> Brand.mute
+                        else -> mute
                     },
                     softWrap = false,
                     modifier = Modifier
@@ -145,11 +154,11 @@ fun SplashScreen(onFinished: () -> Unit) {
                         .shadow(28.dp * tile.value, androidx.compose.foundation.shape.RoundedCornerShape(42.dp), clip = false),
                 ) {
                     drawRoundRect(
-                        Brush.verticalGradient(listOf(Brand.boneTop, Brand.boneBottom)),
+                        Brush.verticalGradient(listOf(tileTop, tileBottom)),
                         cornerRadius = CornerRadius(42.dp.toPx()),
                     )
                     val w = size.width
-                    globStar(armHalf = w * 0.216f, stroke = w * 0.1f, eye = w * 0.0625f, rotation = spin.value)
+                    globStar(armHalf = w * 0.216f, stroke = w * 0.1f, eye = w * 0.0625f, ink = ink, rotation = spin.value)
                 }
                 Box(Modifier.size(26.dp))
                 val shown = "+91 140*".take((type.value * 8).toInt())
@@ -158,10 +167,10 @@ fun SplashScreen(onFinished: () -> Unit) {
                         .alpha(if (type.value > 0f) 1f else 0f)
                         .shadow(6.dp, CircleShape, clip = false)
                         .clip(CircleShape)
-                        .background(Color.White)
+                        .background(pill)
                         .padding(horizontal = 12.dp, vertical = 6.dp),
                 ) {
-                    Text(shown.padEnd(8, ' '), style = CType.mono, color = Brand.ink)
+                    Text(shown.padEnd(8, ' '), style = CType.mono, color = ink)
                 }
             }
         }
@@ -177,12 +186,12 @@ fun SplashScreen(onFinished: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text("Globber", style = CType.display, color = Brand.ink)
-            Text("Spam caught by its pattern. Real calls ring.", style = CType.meta, color = Color(0xFF6B6660))
+            Text("Globber", style = CType.display, color = ink)
+            Text("Spam caught by its pattern. Real calls ring.", style = CType.meta, color = sub)
             Box(Modifier.size(28.dp))
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Box(Modifier.size(7.dp).clip(CircleShape).background(Color(0xFF1E9E5A)))
-                Text("Screening on this phone · no internet", style = CType.label, color = Color(0xFF6B6660))
+                Text("Screening on this phone · no internet", style = CType.label, color = sub)
             }
         }
     }

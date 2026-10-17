@@ -160,10 +160,21 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.DARK -> true
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
             }
+            // Android 12+: tell the system our theme so its launch splash (drawn before
+            // any app code runs) uses the matching day/night background next time.
+            LaunchedEffect(themeMode) {
+                if (Build.VERSION.SDK_INT >= 31) getSystemService(android.app.UiModeManager::class.java)?.setApplicationNightMode(
+                    when (themeMode) {
+                        ThemeMode.LIGHT -> android.app.UiModeManager.MODE_NIGHT_NO
+                        ThemeMode.DARK -> android.app.UiModeManager.MODE_NIGHT_YES
+                        ThemeMode.SYSTEM -> android.app.UiModeManager.MODE_NIGHT_AUTO
+                    },
+                )
+            }
             var phase by rememberSaveable { mutableStateOf(Phase.SPLASH) }
             val roleState = rememberRoleState()
             // Status/nav bar icons follow the app's theme (splash + onboarding are always light).
-            val lightBars = phase != Phase.APP || !dark
+            val lightBars = if (phase == Phase.ONBOARD) true else !dark
             SideEffect {
                 WindowCompat.getInsetsController(window, window.decorView).apply {
                     isAppearanceLightStatusBars = lightBars
@@ -175,7 +186,7 @@ class MainActivity : ComponentActivity() {
                     if (phase == Phase.APP) com.salah.callblocker.ui.kit.GridGlowBackdrop()
                     Crossfade(phase, animationSpec = tween(450), label = "phase") { p ->
                         when (p) {
-                            Phase.SPLASH -> SplashScreen(onFinished = {
+                            Phase.SPLASH -> SplashScreen(dark = dark, onFinished = {
                                 phase = if (settings.onboarded.value) Phase.APP else Phase.ONBOARD
                             })
                             // Splash and onboarding are always the light ceramic look.
