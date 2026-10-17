@@ -18,6 +18,10 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     val notifyOnBlock: StateFlow<Boolean> = settings.notifyOnBlock
     val blockUnknown: StateFlow<Boolean> = settings.blockUnknown
     val themeMode: StateFlow<ThemeMode> = settings.themeMode
+    val allowList: StateFlow<Set<String>> = settings.allowList
+
+    fun allow(n: String) = settings.allow(n)
+    fun disallow(n: String) = settings.disallow(n)
 
     fun setNotifyOnBlock(v: Boolean) = settings.setNotifyOnBlock(v)
     fun setBlockUnknown(v: Boolean) = settings.setBlockUnknown(v)

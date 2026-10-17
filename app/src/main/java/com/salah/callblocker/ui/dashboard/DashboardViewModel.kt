@@ -4,25 +4,28 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.salah.callblocker.CallBlockerApp
+import com.salah.callblocker.data.BlockRule
 import com.salah.callblocker.data.BlockedCall
 import com.salah.callblocker.data.RuleRepository
-import com.salah.callblocker.ui.components.DeltaInfo
+import com.salah.callblocker.ui.kit.startOfDay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import java.util.Calendar
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+data class DayBar(val label: String, val count: Int, val today: Boolean)
 
 data class DashboardUiState(
-    val totalBlocked: Int = 0,
     val blockedToday: Int = 0,
-    val blockedThisWeek: Int = 0,
-    val weekDelta: DeltaInfo? = null,
-    val todayTrack: Float = 0f,
+    val blockedWeek: Int = 0,
     val activeRules: Int = 0,
     val totalRules: Int = 0,
-    val topBlockedNumber: String? = null,
-    val topBlockedCount: Int = 0,
+    val topRule: BlockRule? = null,
+    val topRuleHits: Int = 0,
+    val week: List<DayBar> = emptyList(),
     val recent: List<BlockedCall> = emptyList(),
 )
 
@@ -32,66 +35,29 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     val state: StateFlow<DashboardUiState> =
         combine(repo.rules, repo.blockedCalls) { rules, calls ->
-            val now = System.currentTimeMillis()
-            val cal = Calendar.getInstance()
-            cal.timeInMillis = now
-            cal.set(Calendar.HOUR_OF_DAY, 0)
-            cal.set(Calendar.MINUTE, 0)
-            cal.set(Calendar.SECOND, 0)
-            cal.set(Calendar.MILLISECOND, 0)
-            val startOfToday = cal.timeInMillis
-            cal.set(Calendar.DAY_OF_WEEK, cal.firstDayOfWeek)
-            val startOfWeek = cal.timeInMillis
-            val startOfLastWeek = startOfWeek - 7L * 24 * 60 * 60 * 1000
-
-            val thisWeek = calls.count { it.timestamp >= startOfWeek }
-            val lastWeek = calls.count { it.timestamp in startOfLastWeek until startOfWeek }
-            val today = calls.count { it.timestamp >= startOfToday }
-
-            val weekDelta = when {
-                thisWeek == 0 && lastWeek == 0 -> null
-                lastWeek == 0 -> DeltaInfo("+$thisWeek", positive = true)
-                else -> {
-                    val diff = thisWeek - lastWeek
-                    val pct = (diff * 100) / lastWeek
-                    DeltaInfo((if (pct >= 0) "+$pct%" else "$pct%"), positive = pct >= 0)
-                }
+            val today = startOfDay(System.currentTimeMillis())
+            val day = 86_400_000L
+            val weekStart = today - 6 * day
+            val fmt = SimpleDateFormat("EEEEE", Locale.getDefault())
+            val week = (6 downTo 0).map { back ->
+                val start = today - back * day
+                DayBar(
+                    label = fmt.format(Date(start)),
+                    count = calls.count { it.timestamp in start until start + day },
+                    today = back == 0,
+                )
             }
-
-            val top = calls.groupingBy { it.number }.eachCount().maxByOrNull { it.value }
-
-            // Normalize today's count against the busiest day this week for the mini-track.
-            val maxDaily = calls
-                .filter { it.timestamp >= startOfWeek }
-                .groupingBy { dayKey(it.timestamp) }
-                .eachCount().values.maxOrNull() ?: 0
-            val todayTrack = if (maxDaily > 0) today.toFloat() / maxDaily else 0f
-
+            val hits = calls.groupingBy { it.matchedRuleId }.eachCount()
+            val top = rules.maxByOrNull { hits[it.id] ?: 0 }?.takeIf { (hits[it.id] ?: 0) > 0 }
             DashboardUiState(
-                totalBlocked = calls.size,
-                blockedToday = today,
-                blockedThisWeek = thisWeek,
-                weekDelta = weekDelta,
-                todayTrack = todayTrack,
+                blockedToday = calls.count { it.timestamp >= today },
+                blockedWeek = calls.count { it.timestamp >= weekStart },
                 activeRules = rules.count { it.enabled },
                 totalRules = rules.size,
-                topBlockedNumber = top?.key,
-                topBlockedCount = top?.value ?: 0,
-                recent = calls.sortedByDescending { it.timestamp }.take(5),
+                topRule = top,
+                topRuleHits = top?.let { hits[it.id] } ?: 0,
+                week = week,
+                recent = calls.sortedByDescending { it.timestamp }.take(3),
             )
-        }.stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            DashboardUiState(),
-        )
-
-    private fun dayKey(ts: Long): Long {
-        val c = Calendar.getInstance()
-        c.timeInMillis = ts
-        c.set(Calendar.HOUR_OF_DAY, 0)
-        c.set(Calendar.MINUTE, 0)
-        c.set(Calendar.SECOND, 0)
-        c.set(Calendar.MILLISECOND, 0)
-        return c.timeInMillis
-    }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 }

@@ -10,6 +10,7 @@ import com.salah.callblocker.data.RuleAction
 import com.salah.callblocker.data.RuleRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -22,6 +23,11 @@ class RulesViewModel(app: Application) : AndroidViewModel(app) {
         SharingStarted.WhileSubscribed(5000),
         emptyList(),
     )
+
+    /** Hits per rule id, from the blocked-call log. */
+    val hits: StateFlow<Map<Long, Int>> = combine(repo.rules, repo.blockedCalls) { _, calls ->
+        calls.mapNotNull { it.matchedRuleId }.groupingBy { it }.eachCount()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun addRule(pattern: String, type: PatternType, label: String, action: RuleAction) {
         viewModelScope.launch {
@@ -44,6 +50,12 @@ class RulesViewModel(app: Application) : AndroidViewModel(app) {
     fun delete(rule: BlockRule) {
         viewModelScope.launch {
             repo.deleteRule(rule)
+        }
+    }
+
+    fun restore(rule: BlockRule) {
+        viewModelScope.launch {
+            repo.updateRule(rule)
         }
     }
 

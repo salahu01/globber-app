@@ -4,102 +4,86 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
-// ---- Brand / accent constants ----
-val lime_neon = Color(0xFFB6FF3C) // dark-surface accent fill
-val lime_neon_deep = Color(0xFF8BC926) // light-theme accent variant
-val on_lime = Color(0xFF1A2400) // near-black text on lime cards
-val delta_positive_dark = Color(0xFF8BE04A)
-val delta_positive_light = Color(0xFF3E7A00)
-val delta_negative = Color(0xFFFF5A5A)
-val delta_negative_light = Color(0xFFBA1A1A)
-
-// ---- Light scheme colors ----
-val md_light_primary = Color(0xFF4E6A00)
-val md_light_onPrimary = Color(0xFFFFFFFF)
-val md_light_primaryContainer = Color(0xFFC4F24E)
-val md_light_onPrimaryContainer = Color(0xFF1A2400)
-val md_light_secondary = Color(0xFF5A6147)
-val md_light_onSecondary = Color(0xFFFFFFFF)
-val md_light_secondaryContainer = Color(0xFFE3E8CF)
-val md_light_onSecondaryContainer = Color(0xFF181D08)
-val md_light_tertiary = Color(0xFF3E6A00)
-val md_light_onTertiary = Color(0xFFFFFFFF)
-val md_light_tertiaryContainer = Color(0xFFB7F25A)
-val md_light_onTertiaryContainer = Color(0xFF152200)
-val md_light_error = Color(0xFFBA1A1A)
-val md_light_onError = Color(0xFFFFFFFF)
-val md_light_errorContainer = Color(0xFFFFDAD6)
-val md_light_onErrorContainer = Color(0xFF410002)
-val md_light_background = Color(0xFFF7F9F0)
-val md_light_onBackground = Color(0xFF1A1C16)
-val md_light_surface = Color(0xFFF7F9F0)
-val md_light_onSurface = Color(0xFF1A1C16)
-val md_light_surfaceVariant = Color(0xFFE3E8D4)
-val md_light_onSurfaceVariant = Color(0xFF45483D)
-val md_light_outline = Color(0xFF767869)
-val md_light_surfaceContainerLowest = Color(0xFFFFFFFF)
-val md_light_surfaceContainerLow = Color(0xFFF1F4E8)
-val md_light_surfaceContainer = Color(0xFFEBEEDF)
-val md_light_surfaceContainerHigh = Color(0xFFE5E9DA)
-val md_light_surfaceContainerHighest = Color(0xFFDFE3D4)
-
-// ---- Dark scheme colors ----
-val md_dark_primary = Color(0xFFB6FF3C)
-val md_dark_onPrimary = Color(0xFF1A2400)
-val md_dark_primaryContainer = Color(0xFF2A3A00)
-val md_dark_onPrimaryContainer = Color(0xFFCFFF7A)
-val md_dark_secondary = Color(0xFFC9CDB8)
-val md_dark_onSecondary = Color(0xFF1C1C18)
-val md_dark_secondaryContainer = Color(0xFF26271F)
-val md_dark_onSecondaryContainer = Color(0xFFE7EBD6)
-val md_dark_tertiary = Color(0xFF9EE53D)
-val md_dark_onTertiary = Color(0xFF1A2400)
-val md_dark_tertiaryContainer = Color(0xFF243200)
-val md_dark_onTertiaryContainer = Color(0xFFD3FF8A)
-val md_dark_error = Color(0xFFFF5A5A)
-val md_dark_onError = Color(0xFF2A0000)
-val md_dark_errorContainer = Color(0xFF3A1212)
-val md_dark_onErrorContainer = Color(0xFFFFD9D6)
-val md_dark_background = Color(0xFF080809)
-val md_dark_onBackground = Color(0xFFF3F3F4)
-val md_dark_surface = Color(0xFF080809)
-val md_dark_onSurface = Color(0xFFF3F3F4)
-val md_dark_surfaceVariant = Color(0xFF1B1B1D)
-val md_dark_onSurfaceVariant = Color(0xFF9B9BA0)
-val md_dark_outline = Color(0xFF2E2E31)
-val md_dark_surfaceContainerLowest = Color(0xFF050506)
-val md_dark_surfaceContainerLow = Color(0xFF131315)
-val md_dark_surfaceContainer = Color(0xFF161618)
-val md_dark_surfaceContainerHigh = Color(0xFF202023)
-val md_dark_surfaceContainerHighest = Color(0xFF29292D)
-
-// ---- Custom semantic colors (no M3 ColorScheme slot) ----
+/**
+ * Ceramic design system: bone surfaces, ink text and controls, one signal red
+ * reserved for spam / blocked states. Mirrors docs/prototype (app.css "CERAMIC SYSTEM").
+ */
 @Immutable
-data class CallBlockerColors(
-    val accentFill: Color,
-    val onAccent: Color,
-    val deltaPositive: Color,
-    val deltaNegative: Color,
-    val track: Color,
-    val trackFilled: Color,
+data class Ceramic(
+    val bg: Color,
+    val surface: Color,
+    val surface2: Color,
+    val text: Color,
+    val text2: Color,
+    val line: Color,
+    val hair: Color,
+    /** Primary control fill (buttons, active chip, tab indicator). */
+    val ink: Color,
+    /** Content on [ink]. */
+    val onInk: Color,
+    val red: Color,
+    val redBg: Color,
+    val redInk: Color,
+    val ok: Color,
+    val okBg: Color,
+    val okInk: Color,
+    val info: Color,
+    val infoBg: Color,
+    val isDark: Boolean,
 )
 
-val DarkAccents = CallBlockerColors(
-    accentFill = lime_neon,
-    onAccent = on_lime,
-    deltaPositive = delta_positive_dark,
-    deltaNegative = delta_negative,
-    track = Color(0xFF2C2C30),
-    trackFilled = lime_neon,
+val CeramicLight = Ceramic(
+    bg = Color(0xFFEEEBE6),
+    surface = Color(0xFFFBFAF8),
+    surface2 = Color(0xFFE6E1DA),
+    text = Color(0xFF141414),
+    text2 = Color(0xFF6E6862),
+    line = Color(0xFFDDD7CF),
+    hair = Color(0x0D000000),
+    ink = Color(0xFF141414),
+    onInk = Color(0xFFF7F5F2),
+    red = Color(0xFFE8392B),
+    redBg = Color(0x14E8392B),
+    redInk = Color(0xFFC42A1E),
+    ok = Color(0xFF1E9E5A),
+    okBg = Color(0x171E9E5A),
+    okInk = Color(0xFF147444),
+    info = Color(0xFF55606E),
+    infoBg = Color(0x1455606E),
+    isDark = false,
 )
 
-val LightAccents = CallBlockerColors(
-    accentFill = md_light_primaryContainer,
-    onAccent = md_light_onPrimaryContainer,
-    deltaPositive = delta_positive_light,
-    deltaNegative = delta_negative_light,
-    track = Color(0xFFD3DABF),
-    trackFilled = lime_neon_deep,
+val CeramicDark = Ceramic(
+    bg = Color(0xFF0E0E0F),
+    surface = Color(0xFF18181A),
+    surface2 = Color(0xFF222225),
+    text = Color(0xFFF2F0EE),
+    text2 = Color(0xFF97918A),
+    line = Color(0xFF2C2C30),
+    hair = Color(0x0DFFFFFF),
+    ink = Color(0xFFF2F0EE),
+    onInk = Color(0xFF141414),
+    red = Color(0xFFFF4A3B),
+    redBg = Color(0x1CFF4A3B),
+    redInk = Color(0xFFFF7B6E),
+    ok = Color(0xFF3BC07A),
+    okBg = Color(0x1C3BC07A),
+    okInk = Color(0xFF6AD49C),
+    info = Color(0xFF9AA4B1),
+    infoBg = Color(0x1A9AA4B1),
+    isDark = true,
 )
 
-val LocalCallBlockerColors = staticCompositionLocalOf { DarkAccents }
+/** Fixed brand colors used by the splash and glob-star mark regardless of theme. */
+object Brand {
+    val bone = Color(0xFFEEEBE6)
+    val boneTop = Color(0xFFFDFCFA)
+    val boneBottom = Color(0xFFE2DED8)
+    val ink = Color(0xFF141414)
+    val red = Color(0xFFE8392B)
+    val redLight = Color(0xFFFF7A63)
+    val redDeep = Color(0xFF6E0F09)
+    val mute = Color(0xFF9A948D)
+}
+
+val LocalCeramic = staticCompositionLocalOf { CeramicLight }

@@ -21,6 +21,12 @@ class LogViewModel(app: Application) : AndroidViewModel(app) {
         emptyList(),
     )
 
+    fun restore(calls: List<com.salah.callblocker.data.BlockedCall>) {
+        viewModelScope.launch {
+            calls.sortedBy { it.timestamp }.forEach { repo.logBlocked(it.copy(id = 0)) }
+        }
+    }
+
     fun clear() {
         viewModelScope.launch {
             repo.clearLog()
