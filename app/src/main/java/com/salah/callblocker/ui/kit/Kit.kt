@@ -40,6 +40,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -57,13 +60,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxSize
 import com.salah.callblocker.ui.theme.Brand
 import com.salah.callblocker.ui.theme.CType
 import com.salah.callblocker.ui.theme.Ceramic
 import com.salah.callblocker.ui.theme.LocalCeramic
 
 val Gutter = 20.dp
-private val CardShape = RoundedCornerShape(22.dp)
+private val CardShape = RoundedCornerShape(20.dp)
 
 /** Semantic tint for tiles and badges. */
 enum class Tone { Neutral, Red, Ok, Info, Ink }
@@ -74,6 +78,56 @@ private fun Ceramic.toneBg(t: Tone) = when (t) {
 private fun Ceramic.toneFg(t: Tone) = when (t) {
     Tone.Neutral -> text; Tone.Red -> redInk; Tone.Ok -> okInk; Tone.Info -> info; Tone.Ink -> onInk
 }
+
+/** Accent hue a tone tints its tile with. */
+private fun Ceramic.toneHue(t: Tone) = when (t) {
+    Tone.Neutral -> text; Tone.Red -> red; Tone.Ok -> ok; Tone.Info -> info; Tone.Ink -> ink
+}
+
+/**
+ * Premium card surface: solid card fill, 1dp hairline, soft two-layer drop shadow,
+ * and (dark mode) a 1px top highlight like light catching the edge.
+ */
+@Composable
+fun Modifier.cardSurface(shape: Shape = CardShape): Modifier {
+    val c = LocalCeramic.current
+    return this
+        .shadow(if (c.isDark) 10.dp else 6.dp, shape, ambientColor = Color.Black.copy(alpha = if (c.isDark) 0.5f else 0.06f), spotColor = Color.Black.copy(alpha = if (c.isDark) 0.6f else 0.10f))
+        .clip(shape)
+        .background(c.surface)
+        .drawBehind {
+            if (c.isDark) drawLine(Color.White.copy(alpha = 0.05f), Offset(size.height * 0.1f, 0.5f), Offset(size.width - size.height * 0.1f, 0.5f), 1.dp.toPx())
+        }
+        .border(1.dp, c.line, shape)
+}
+
+/** Icon tile: tone hue washed top-to-bottom into the card, with a faint tone-tinted inner ring. */
+@Composable
+fun Modifier.toneTile(tone: Tone, shape: Shape): Modifier {
+    val c = LocalCeramic.current
+    if (tone == Tone.Ink) return this.clip(shape).background(c.ink)
+    val hue = c.toneHue(tone)
+    val k = if (tone == Tone.Neutral) 0.5f else 1f
+    return this
+        .shadow(1.dp, shape)
+        .clip(shape)
+        .background(Brush.verticalGradient(listOf(lerp(c.surface, hue, 0.14f * k), lerp(c.surface, hue, 0.05f * k))))
+        .border(1.dp, hue.copy(alpha = 0.18f * k), shape)
+}
+
+/** The glob star "*" (wildcard rules): three rounded strokes on a 24dp grid; [weight] sets stroke width. */
+fun globStarIcon(weight: Float): ImageVector = ImageVector.Builder("GlobStar$weight", 24.dp, 24.dp, 24f, 24f).apply {
+    val stroke = androidx.compose.ui.graphics.SolidColor(Color.Black)
+    for (deg in listOf(90.0, 30.0, -30.0)) {
+        val r = Math.toRadians(deg)
+        val dx = (7.5 * Math.cos(r)).toFloat()
+        val dy = (7.5 * Math.sin(r)).toFloat()
+        addPath(
+            androidx.compose.ui.graphics.vector.PathData { moveTo(12f - dx, 12f - dy); lineTo(12f + dx, 12f + dy) },
+            stroke = stroke, strokeLineWidth = weight, strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Round,
+        )
+    }
+}.build()
 
 /* ---------------- brand mark ---------------- */
 
@@ -123,9 +177,7 @@ fun CCard(
     val c = LocalCeramic.current
     Column(
         modifier
-            .clip(CardShape)
-            .background(c.surface)
-            .border(1.dp, c.hair, CardShape)
+            .cardSurface()
             .then(if (onClick != null) Modifier.pressable(onClick) else Modifier)
             .padding(padding),
         content = content,
@@ -136,7 +188,7 @@ fun CCard(
 @Composable
 fun CListCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val c = LocalCeramic.current
-    Column(modifier.fillMaxWidth().clip(CardShape).background(c.surface).border(1.dp, c.hair, CardShape), content = content)
+    Column(modifier.fillMaxWidth().cardSurface(), content = content)
 }
 
 @Composable
@@ -161,7 +213,7 @@ fun Modifier.pressable(onClick: () -> Unit): Modifier {
 fun Tile(icon: ImageVector, tone: Tone = Tone.Neutral, size: Dp = 44.dp, iconSize: Dp = 22.dp) {
     val c = LocalCeramic.current
     Box(
-        Modifier.size(size).clip(RoundedCornerShape(size * 0.32f)).background(c.toneBg(tone)),
+        Modifier.toneTile(tone, RoundedCornerShape(size * 0.3f)).size(size),
         contentAlignment = Alignment.Center,
     ) { Icon(icon, null, tint = c.toneFg(tone), modifier = Modifier.size(iconSize)) }
 }
@@ -169,7 +221,7 @@ fun Tile(icon: ImageVector, tone: Tone = Tone.Neutral, size: Dp = 44.dp, iconSiz
 @Composable
 fun TextTile(text: String, size: Dp = 44.dp) {
     val c = LocalCeramic.current
-    Box(Modifier.size(size).clip(RoundedCornerShape(size * 0.32f)).background(c.surface2), contentAlignment = Alignment.Center) {
+    Box(Modifier.toneTile(Tone.Neutral, RoundedCornerShape(size * 0.3f)).size(size), contentAlignment = Alignment.Center) {
         Text(text, style = CType.monoL.copy(fontSize = CType.monoL.fontSize * 1.3f), color = c.text)
     }
 }
@@ -354,3 +406,40 @@ fun CRow(
 
 @Composable
 fun VSpace(h: Dp) = Spacer(Modifier.height(h))
+
+/**
+ * Toolwand-style page backdrop: paper base, a 48dp hairline grid that fades out from the
+ * top, and a soft signal-red glow bleeding in from above the status bar.
+ */
+@Composable
+fun GridGlowBackdrop(modifier: Modifier = Modifier) {
+    val c = LocalCeramic.current
+    val glow = c.red.copy(alpha = if (c.isDark) 0.20f else 0.14f)
+    Canvas(modifier.fillMaxSize()) {
+        val w = size.width; val h = size.height
+        drawRect(c.bg)
+        val step = 48.dp.toPx()
+        val line = if (c.isDark) Color.White.copy(alpha = 0.10f) else c.text.copy(alpha = 0.10f)
+        val fadeH = h * 0.55f
+        val cx = w * 0.5f
+        fun a(x: Float, y: Float): Float {
+            val nx = (x - cx) / (w * 0.75f); val ny = y / fadeH
+            val d = kotlin.math.sqrt(nx * nx + ny * ny)
+            return ((1f - d) / 0.6f).coerceIn(0f, 1f) * 1f
+        }
+        var y = 0f
+        while (y < fadeH) {
+            drawLine(Brush.horizontalGradient(listOf(line.copy(alpha = 0f), line.copy(alpha = line.alpha * a(cx, y)), line.copy(alpha = 0f))), Offset(0f, y), Offset(w, y), 1f)
+            y += step
+        }
+        var x = (cx % step)
+        while (x < w) {
+            drawLine(Brush.verticalGradient(listOf(line.copy(alpha = line.alpha * a(x, 0f)), line.copy(alpha = 0f)), endY = fadeH), Offset(x, 0f), Offset(x, fadeH), 1f)
+            x += step
+        }
+        drawOval(
+            Brush.radialGradient(listOf(glow, Color.Transparent), center = Offset(cx, -h * 0.06f), radius = w * 0.95f),
+            topLeft = Offset(cx - w * 1.1f, -h * 0.35f), size = androidx.compose.ui.geometry.Size(w * 2.2f, h * 0.7f),
+        )
+    }
+}

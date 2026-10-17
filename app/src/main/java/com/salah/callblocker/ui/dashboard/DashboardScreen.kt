@@ -20,7 +20,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.List
+import com.salah.callblocker.ui.kit.globStarIcon
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -118,7 +118,7 @@ fun DashboardScreen(
                     Kpi(Icons.Rounded.CalendarMonth, Tone.Neutral, "7 days", s.blockedWeek.toString(), "blocked this week", Modifier.weight(1f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Kpi(Icons.AutoMirrored.Rounded.List, Tone.Info, null, "${s.activeRules}", "rules active", Modifier.weight(1f), suffix = " / ${s.totalRules}", onClick = onOpenRules)
+                    Kpi(globStarIcon(2.4f), Tone.Info, null, "${s.activeRules}", "rules active", Modifier.weight(1f), suffix = " / ${s.totalRules}", onClick = onOpenRules)
                     val tr = s.topRule
                     Kpi(Icons.Rounded.StarOutline, Tone.Red, null, tr?.pattern ?: "—", if (tr != null) "top rule · ${s.topRuleHits} hits" else "no hits yet",
                         Modifier.weight(1f), mono = true, onClick = if (tr != null) ({ onOpenRule(tr) }) else null)

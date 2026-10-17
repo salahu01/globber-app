@@ -44,13 +44,16 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.List
+import com.salah.callblocker.ui.kit.globStarIcon
+import androidx.compose.material.icons.outlined.Settings as OutlinedSettings
+import androidx.compose.material.icons.outlined.SpaceDashboard as OutlinedDashboard
+import androidx.compose.material.icons.outlined.WatchLater as OutlinedWatchLater
+import androidx.compose.material.icons.rounded.WatchLater
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.PhoneDisabled
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SpaceDashboard
@@ -130,11 +133,13 @@ import com.salah.callblocker.ui.theme.CeramicLight
 import com.salah.callblocker.ui.theme.LocalCeramic
 import kotlinx.coroutines.launch
 
-private enum class Tab(val title: String, val icon: ImageVector) {
-    HOME("Home", Icons.Rounded.SpaceDashboard),
-    RULES("Rules", Icons.AutoMirrored.Rounded.List),
-    LOG("Log", Icons.Rounded.History),
-    SETTINGS("Settings", Icons.Rounded.Settings),
+
+/** [icon] is the filled glyph for the active tab, [outline] the outlined one for the rest. */
+private enum class Tab(val title: String, val icon: ImageVector, val outline: ImageVector) {
+    HOME("Home", Icons.Rounded.SpaceDashboard, Icons.Outlined.OutlinedDashboard),
+    RULES("Rules", globStarIcon(3f), globStarIcon(1.7f)),
+    LOG("Log", Icons.Rounded.WatchLater, Icons.Outlined.OutlinedWatchLater),
+    SETTINGS("Settings", Icons.Rounded.Settings, Icons.Outlined.OutlinedSettings),
 }
 
 private enum class Phase { SPLASH, ONBOARD, APP }
@@ -164,12 +169,7 @@ class MainActivity : ComponentActivity() {
             }
             CallBlockerTheme(darkTheme = dark) {
                 Surface(Modifier.fillMaxSize(), color = LocalCeramic.current.bg) {
-                    if (phase == Phase.APP) {
-                        val c = LocalCeramic.current
-                        val top = if (c.isDark) Color(0xFF36333C) else Color(0xFFFFFFFF)
-                        val bottom = if (c.isDark) Color(0xFF2E100C) else Color(0xFFCDB39C)
-                        Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Brush.verticalGradient(listOf(top, c.bg, bottom))))
-                    }
+                    if (phase == Phase.APP) com.salah.callblocker.ui.kit.GridGlowBackdrop()
                     Crossfade(phase, animationSpec = tween(450), label = "phase") { p ->
                         when (p) {
                             Phase.SPLASH -> SplashScreen(onFinished = {
@@ -337,7 +337,7 @@ private fun GlobberApp(role: RoleState) {
 private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val c = LocalCeramic.current
     var pressed by remember { mutableStateOf<Int?>(null) }
-    val shape = RoundedCornerShape(26.dp)
+    val shape = RoundedCornerShape(percent = 50)
     Box(modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 14.dp), contentAlignment = Alignment.BottomCenter) {
         Row(
             Modifier
@@ -345,7 +345,7 @@ private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier 
                 // background(shape) instead of clip so magnified tiles can rise above the bar
                 .background(c.surface.copy(alpha = if (c.isDark) 0.9f else 0.82f), shape)
                 .border(1.dp, if (c.isDark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.9f), shape)
-                .padding(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 6.dp),
+                .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 6.dp),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.Bottom,
         ) {
@@ -363,8 +363,8 @@ private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier 
                                 translationY = -(scale - 1f) * 18.dp.toPx()
                             }
                             .size(52.dp)
-                            .shadow(if (on) 10.dp else 3.dp, RoundedCornerShape(15.dp))
-                            .clip(RoundedCornerShape(15.dp))
+                            .shadow(if (on) 10.dp else 3.dp, CircleShape)
+                            .clip(CircleShape)
                             .background(if (on) c.ink else c.surface2)
                             .pointerInput(i) {
                                 detectTapGestures(
@@ -375,7 +375,7 @@ private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier 
                             .semantics { contentDescription = t.title; role = Role.Tab; selected = on },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(t.icon, null, tint = if (on) c.onInk else c.text, modifier = Modifier.size(24.dp))
+                        Icon(if (on) t.icon else t.outline, null, tint = if (on) c.onInk else c.text, modifier = Modifier.size(24.dp))
                     }
                     Box(Modifier.height(6.dp))
                     Box(Modifier.size(5.dp).clip(CircleShape).background(if (on) c.text else Color.Transparent))
