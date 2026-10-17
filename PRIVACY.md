@@ -1,5 +1,7 @@
 # Privacy Policy
 
+_Last updated: 17 October 2026_
+
 **Globber** is built to protect your privacy. It runs entirely on your device.
 
 ## Summary
@@ -12,13 +14,13 @@
 
 | Data | Why | Where it goes |
 |------|-----|---------------|
-| **Contacts** (`READ_CONTACTS`) | Optionally allow calls from people already in your contacts | Read in-memory at call time; never stored, never transmitted |
 | **Incoming call numbers** | Matched against your block rules via the system `CallScreeningService` | Processed on-device; a local block log is stored only on your device |
+| **Allowed numbers** | Numbers you choose to always let ring | Stored only on your device |
 | **Notifications** (`POST_NOTIFICATIONS`) | Tell you when a call was blocked | Stays on-device |
 
 ## Data storage
 
-Block rules and the block log are stored in a local database on your device
+Block rules, allowed numbers and the block log are stored in a local database on your device
 only. Uninstalling the app removes this data. Globber does not back this data
 up to any server.
 
@@ -26,11 +28,13 @@ up to any server.
 
 Globber requests only:
 
-- `READ_CONTACTS` — optional contacts allow-list
 - `POST_NOTIFICATIONS` — block notifications
 
-It does **not** request internet, location, microphone, camera, or storage
-permissions.
+It also asks to be your **call screening app** (a system role, not a
+permission), which lets Android show it the number of each incoming call.
+
+It does **not** request contacts, internet, location, microphone, camera, or
+storage permissions.
 
 ## Changes
 
