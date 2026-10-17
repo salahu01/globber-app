@@ -29,6 +29,15 @@ class RulesViewModel(app: Application) : AndroidViewModel(app) {
         calls.mapNotNull { it.matchedRuleId }.groupingBy { it }.eachCount()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
+    /** Last 7 days of hits per rule (index 6 = today), for the card sparkline. */
+    val daily: StateFlow<Map<Long, List<Int>>> = combine(repo.rules, repo.blockedCalls) { _, calls ->
+        val today = com.salah.callblocker.ui.kit.startOfDay(System.currentTimeMillis())
+        val day = 86_400_000L
+        calls.filter { it.matchedRuleId != null && it.timestamp >= today - 6 * day }
+            .groupBy { it.matchedRuleId!! }
+            .mapValues { (_, l) -> List(7) { i -> val start = today - (6 - i) * day; l.count { it.timestamp in start until start + day } } }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     fun addRule(pattern: String, type: PatternType, label: String, action: RuleAction) {
         viewModelScope.launch {
             repo.addRule(pattern, type, label, action)

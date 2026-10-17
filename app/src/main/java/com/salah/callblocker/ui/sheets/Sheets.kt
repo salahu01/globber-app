@@ -2,6 +2,8 @@
 
 package com.salah.callblocker.ui.sheets
 
+import com.salah.callblocker.ui.kit.EmptyArt
+import com.salah.callblocker.ui.kit.EmptyIllustration
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -168,7 +170,7 @@ fun AllowedSheet(numbers: Set<String>, onRemove: (String) -> Unit, onDismiss: ()
         Text("Allowed numbers", style = CType.title, color = c.text)
         if (numbers.isEmpty()) {
             Column(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Icon(Icons.Rounded.Check, null, tint = c.text2, modifier = Modifier.size(32.dp))
+                EmptyIllustration(EmptyArt.Allowed)
                 Text("No exceptions yet", style = CType.h, color = c.text)
                 Text("Open a blocked call and tap “Always allow” to add one.", style = CType.meta, color = c.text2, textAlign = TextAlign.Center)
             }

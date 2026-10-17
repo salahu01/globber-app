@@ -1,5 +1,15 @@
 package com.salah.callblocker.ui.kit
 
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -40,6 +50,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -57,13 +70,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxSize
 import com.salah.callblocker.ui.theme.Brand
 import com.salah.callblocker.ui.theme.CType
 import com.salah.callblocker.ui.theme.Ceramic
 import com.salah.callblocker.ui.theme.LocalCeramic
 
 val Gutter = 20.dp
-private val CardShape = RoundedCornerShape(22.dp)
+private val CardShape = RoundedCornerShape(20.dp)
 
 /** Semantic tint for tiles and badges. */
 enum class Tone { Neutral, Red, Ok, Info, Ink }
@@ -74,6 +88,56 @@ private fun Ceramic.toneBg(t: Tone) = when (t) {
 private fun Ceramic.toneFg(t: Tone) = when (t) {
     Tone.Neutral -> text; Tone.Red -> redInk; Tone.Ok -> okInk; Tone.Info -> info; Tone.Ink -> onInk
 }
+
+/** Accent hue a tone tints its tile with. */
+private fun Ceramic.toneHue(t: Tone) = when (t) {
+    Tone.Neutral -> text; Tone.Red -> red; Tone.Ok -> ok; Tone.Info -> info; Tone.Ink -> ink
+}
+
+/**
+ * Premium card surface: solid card fill, 1dp hairline, soft two-layer drop shadow,
+ * and (dark mode) a 1px top highlight like light catching the edge.
+ */
+@Composable
+fun Modifier.cardSurface(shape: Shape = CardShape): Modifier {
+    val c = LocalCeramic.current
+    return this
+        .shadow(if (c.isDark) 10.dp else 6.dp, shape, ambientColor = Color.Black.copy(alpha = if (c.isDark) 0.5f else 0.06f), spotColor = Color.Black.copy(alpha = if (c.isDark) 0.6f else 0.10f))
+        .clip(shape)
+        .background(c.surface)
+        .drawBehind {
+            if (c.isDark) drawLine(Color.White.copy(alpha = 0.05f), Offset(size.height * 0.1f, 0.5f), Offset(size.width - size.height * 0.1f, 0.5f), 1.dp.toPx())
+        }
+        .border(1.dp, c.line, shape)
+}
+
+/** Icon tile: tone hue washed top-to-bottom into the card, with a faint tone-tinted inner ring. */
+@Composable
+fun Modifier.toneTile(tone: Tone, shape: Shape): Modifier {
+    val c = LocalCeramic.current
+    if (tone == Tone.Ink) return this.clip(shape).background(c.ink)
+    val hue = c.toneHue(tone)
+    val k = if (tone == Tone.Neutral) 0.5f else 1f
+    return this
+        .shadow(1.dp, shape)
+        .clip(shape)
+        .background(Brush.verticalGradient(listOf(lerp(c.surface, hue, 0.14f * k), lerp(c.surface, hue, 0.05f * k))))
+        .border(1.dp, hue.copy(alpha = 0.18f * k), shape)
+}
+
+/** The glob star "*" (wildcard rules): three rounded strokes on a 24dp grid; [weight] sets stroke width. */
+fun globStarIcon(weight: Float): ImageVector = ImageVector.Builder("GlobStar$weight", 24.dp, 24.dp, 24f, 24f).apply {
+    val stroke = androidx.compose.ui.graphics.SolidColor(Color.Black)
+    for (deg in listOf(90.0, 30.0, -30.0)) {
+        val r = Math.toRadians(deg)
+        val dx = (7.5 * Math.cos(r)).toFloat()
+        val dy = (7.5 * Math.sin(r)).toFloat()
+        addPath(
+            androidx.compose.ui.graphics.vector.PathData { moveTo(12f - dx, 12f - dy); lineTo(12f + dx, 12f + dy) },
+            stroke = stroke, strokeLineWidth = weight, strokeLineCap = androidx.compose.ui.graphics.StrokeCap.Round,
+        )
+    }
+}.build()
 
 /* ---------------- brand mark ---------------- */
 
@@ -123,9 +187,7 @@ fun CCard(
     val c = LocalCeramic.current
     Column(
         modifier
-            .clip(CardShape)
-            .background(c.surface)
-            .border(1.dp, c.hair, CardShape)
+            .cardSurface()
             .then(if (onClick != null) Modifier.pressable(onClick) else Modifier)
             .padding(padding),
         content = content,
@@ -136,7 +198,7 @@ fun CCard(
 @Composable
 fun CListCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val c = LocalCeramic.current
-    Column(modifier.fillMaxWidth().clip(CardShape).background(c.surface).border(1.dp, c.hair, CardShape), content = content)
+    Column(modifier.fillMaxWidth().cardSurface(), content = content)
 }
 
 @Composable
@@ -150,9 +212,11 @@ fun CRowDivider(inset: Dp = 72.dp) {
 fun Modifier.pressable(onClick: () -> Unit): Modifier {
     val src = remember { MutableInteractionSource() }
     val pressed by src.collectIsPressedAsState()
+    val k by animateFloatAsState(if (pressed) 0.96f else 1f, spring(dampingRatio = 0.55f, stiffness = 700f), label = "press")
+    val haptic = LocalHapticFeedback.current
     return this
-        .scale(if (pressed) 0.97f else 1f)
-        .clickable(interactionSource = src, indication = null, onClick = onClick)
+        .graphicsLayer { scaleX = k; scaleY = k }
+        .clickable(interactionSource = src, indication = null) { haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove); onClick() }
 }
 
 /* ---------------- atoms ---------------- */
@@ -161,7 +225,7 @@ fun Modifier.pressable(onClick: () -> Unit): Modifier {
 fun Tile(icon: ImageVector, tone: Tone = Tone.Neutral, size: Dp = 44.dp, iconSize: Dp = 22.dp) {
     val c = LocalCeramic.current
     Box(
-        Modifier.size(size).clip(RoundedCornerShape(size * 0.32f)).background(c.toneBg(tone)),
+        Modifier.toneTile(tone, RoundedCornerShape(size * 0.3f)).size(size),
         contentAlignment = Alignment.Center,
     ) { Icon(icon, null, tint = c.toneFg(tone), modifier = Modifier.size(iconSize)) }
 }
@@ -169,7 +233,7 @@ fun Tile(icon: ImageVector, tone: Tone = Tone.Neutral, size: Dp = 44.dp, iconSiz
 @Composable
 fun TextTile(text: String, size: Dp = 44.dp) {
     val c = LocalCeramic.current
-    Box(Modifier.size(size).clip(RoundedCornerShape(size * 0.32f)).background(c.surface2), contentAlignment = Alignment.Center) {
+    Box(Modifier.toneTile(Tone.Neutral, RoundedCornerShape(size * 0.3f)).size(size), contentAlignment = Alignment.Center) {
         Text(text, style = CType.monoL.copy(fontSize = CType.monoL.fontSize * 1.3f), color = c.text)
     }
 }
@@ -189,6 +253,25 @@ fun Badge(text: String, tone: Tone = Tone.Neutral, icon: ImageVector? = null) {
 
 enum class BtnStyle { Ink, Ghost, Danger }
 
+/**
+ * Glossy pill fill: top-lit vertical gradient, a light rim that fades
+ * downward, and (for solid styles) a soft drop in the button's own hue.
+ */
+@Composable
+fun Modifier.premiumFill(bg: Color, shape: androidx.compose.ui.graphics.Shape, glow: Boolean = true, solid: Boolean = true): Modifier {
+    val c = LocalCeramic.current
+    val top = lerp(bg, Color.White, if (solid) (if (c.isDark) 0.10f else 0.16f) else 0.5f)
+    val bottom = lerp(bg, Color.Black, if (solid) 0.18f else 0.02f)
+    val rim = Brush.verticalGradient(
+        listOf(Color.White.copy(alpha = if (solid) 0.28f else 0.9f), Color.White.copy(alpha = 0f), (if (solid) Color.Black else c.line).copy(alpha = if (solid) 0.25f else 1f)),
+    )
+    return this
+        .then(if (glow) Modifier.shadow(14.dp, shape, ambientColor = bg, spotColor = bg) else Modifier)
+        .clip(shape)
+        .background(Brush.verticalGradient(listOf(top, bottom)))
+        .border(1.dp, rim, shape)
+}
+
 @Composable
 fun CButton(
     text: String,
@@ -205,17 +288,23 @@ fun CButton(
         BtnStyle.Ghost -> c.surface2 to c.text
         BtnStyle.Danger -> c.red to Color.White
     }
+    val solid = style != BtnStyle.Ghost
     Row(
         modifier
             .heightIn(min = if (small) 40.dp else 54.dp)
-            .clip(CircleShape)
-            .background(bg)
+            .premiumFill(bg, CircleShape, glow = solid && !small, solid = solid)
             .pressable(onClick)
-            .padding(horizontal = if (small) 16.dp else 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+            .padding(start = if (icon != null && !small) 8.dp else if (small) 16.dp else 22.dp, end = if (small) 16.dp else 22.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) Icon(icon, null, tint = fg, modifier = Modifier.size(18.dp))
+        if (icon != null) {
+            if (small) Icon(icon, null, tint = fg, modifier = Modifier.size(18.dp))
+            else Box(
+                Modifier.size(38.dp).clip(CircleShape).background(fg.copy(alpha = if (solid) 0.14f else 0.07f)),
+                contentAlignment = Alignment.Center,
+            ) { Icon(icon, null, tint = fg, modifier = Modifier.size(20.dp)) }
+        }
         Text(text, style = if (small) CType.num.copy(fontWeight = CType.btn.fontWeight) else CType.btn, color = fg, maxLines = 1)
         if (trailingIcon != null) Icon(trailingIcon, null, tint = fg, modifier = Modifier.size(18.dp))
     }
@@ -238,35 +327,69 @@ fun SectionLabel(left: String, modifier: Modifier = Modifier, right: String? = n
 fun CToggle(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
     val c = LocalCeramic.current
     val track by animateColorAsState(if (checked) c.ok else c.line, label = "track")
+    val haptic = LocalHapticFeedback.current
     val x by animateDpAsState(if (checked) 20.dp else 0.dp, spring(dampingRatio = Spring.DampingRatioMediumBouncy), label = "thumb")
     Box(
-        modifier.size(50.dp, 30.dp).clip(CircleShape).background(track).clickable { onChange(!checked) }.padding(3.dp),
+        modifier.size(50.dp, 30.dp).clip(CircleShape).background(track).clickable { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onChange(!checked) }.padding(3.dp),
     ) {
         Box(Modifier.offset(x = x).size(24.dp).shadow(2.dp, CircleShape).clip(CircleShape).background(Color.White))
     }
 }
 
 @Composable
-fun <T> ChipRow(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit, modifier: Modifier = Modifier) {
+fun <T> ChipRow(
+    options: List<Pair<T, String>>,
+    selected: T,
+    onSelect: (T) -> Unit,
+    modifier: Modifier = Modifier,
+    lead: (@Composable (T) -> Unit)? = null,
+) {
     val c = LocalCeramic.current
     Row(
-        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Gutter),
+        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = Gutter, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         options.forEach { (v, l) ->
             val on = v == selected
-            Text(
-                l,
-                style = CType.label.copy(fontSize = CType.meta.fontSize),
-                color = if (on) c.onInk else c.text2,
-                modifier = Modifier
+            val edge by animateColorAsState(if (on) c.text.copy(alpha = 0.55f) else c.line, tween(180), label = "chipEdge")
+            val ink by animateColorAsState(if (on) c.text else c.text2, tween(180), label = "chipInk")
+            val lift by animateDpAsState(if (on) 4.dp else 0.dp, tween(180), label = "chipLift")
+            // Toolwand .chip: pill, hairline border on card; active = strong border + small lift.
+            Row(
+                Modifier
+                    .pressable { onSelect(v) }
+                    .shadow(lift, CircleShape, ambientColor = Color.Black.copy(alpha = 0.12f), spotColor = Color.Black.copy(alpha = 0.18f))
                     .clip(CircleShape)
-                    .background(if (on) c.ink else c.surface2)
-                    .clickable { onSelect(v) }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-            )
+                    .background(c.surface)
+                    .border(1.dp, edge, CircleShape)
+                    .padding(start = if (lead != null) 12.dp else 14.dp, end = 14.dp, top = 8.dp, bottom = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                lead?.invoke(v)
+                Text(
+                    l,
+                    style = CType.body.copy(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = if (on) FontWeight.SemiBold else FontWeight.Medium),
+                    color = ink,
+                    maxLines = 1,
+                )
+            }
         }
     }
+}
+
+/** Bare chip lead icon — tone-coloured, no tile behind it. */
+@Composable
+fun ChipIcon(icon: ImageVector, tone: Tone = Tone.Neutral) {
+    val c = LocalCeramic.current
+    Icon(icon, null, tint = if (tone == Tone.Neutral || tone == Tone.Ink) c.text2 else c.toneFg(tone), modifier = Modifier.size(18.dp))
+}
+
+/** Bare chip lead glyph (pattern-type symbol). */
+@Composable
+fun ChipGlyph(text: String) {
+    val c = LocalCeramic.current
+    Text(text, style = CType.mono.copy(fontSize = 14.sp, fontWeight = FontWeight.Bold), color = c.text2, maxLines = 1)
 }
 
 @Composable
@@ -290,17 +413,52 @@ fun <T> Segmented(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> 
 @Composable
 fun SearchField(value: String, onChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
     val c = LocalCeramic.current
+    var focused by remember { mutableStateOf(false) }
     Row(
-        modifier.fillMaxWidth().height(52.dp).clip(CircleShape).background(c.surface2).padding(horizontal = 16.dp),
+        modifier.fillMaxWidth().height(54.dp)
+            .fieldSurface(focused)
+            .padding(start = 7.dp, end = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Icon(Icons.Rounded.Search, null, tint = c.text2, modifier = Modifier.size(20.dp))
+        FieldIcon(Icons.Rounded.Search, focused)
         Box(Modifier.weight(1f)) {
             if (value.isEmpty()) Text(placeholder, style = CType.body, color = c.text2, maxLines = 1)
-            BasicTextField(value, onChange, singleLine = true, textStyle = CType.body.copy(color = c.text), cursorBrush = SolidColor(c.red), modifier = Modifier.fillMaxWidth())
+            BasicTextField(value, onChange, singleLine = true, textStyle = CType.body.copy(color = c.text), cursorBrush = SolidColor(c.red), modifier = Modifier.fillMaxWidth().onFocusChanged { focused = it.isFocused })
         }
-        if (value.isNotEmpty()) Icon(Icons.Rounded.Close, "Clear", tint = c.text2, modifier = Modifier.size(20.dp).clickable { onChange("") })
+        if (value.isNotEmpty()) Box(
+            Modifier.size(28.dp).clip(CircleShape).background(c.surface2).clickable { onChange("") },
+            contentAlignment = Alignment.Center,
+        ) { Icon(Icons.Rounded.Close, "Clear", tint = c.text2, modifier = Modifier.size(16.dp)) }
+    }
+}
+
+/** Premium input surface: soft top-lit fill, hairline rim, red glow while focused. */
+@Composable
+fun Modifier.fieldSurface(focused: Boolean, error: Boolean = false, shape: Shape = CircleShape): Modifier {
+    val c = LocalCeramic.current
+    val glow by animateDpAsState(if (focused || error) 14.dp else 6.dp, tween(200), label = "fieldGlow")
+    val hot = focused || error
+    return this
+        .shadow(glow, shape, ambientColor = if (hot) c.red else Color.Black, spotColor = if (hot) c.red.copy(alpha = 0.5f) else Color.Black.copy(alpha = 0.25f))
+        .clip(shape)
+        .background(Brush.verticalGradient(listOf(c.surface, lerp(c.surface, c.surface2, 0.6f))))
+        .border(
+            if (hot) 1.5.dp else 1.dp,
+            if (hot) Brush.horizontalGradient(listOf(c.red.copy(alpha = if (error) 1f else 0.7f), c.red.copy(alpha = if (error) 0.6f else 0.25f)))
+            else Brush.verticalGradient(listOf(if (c.isDark) Color.White.copy(alpha = 0.10f) else Color.White, c.line)),
+            shape,
+        )
+}
+
+/** Round icon well at the start of an input. */
+@Composable
+fun FieldIcon(icon: ImageVector, focused: Boolean) {
+    val c = LocalCeramic.current
+    val bg by animateColorAsState(if (focused) c.red.copy(alpha = 0.12f) else c.surface2, tween(200), label = "wellBg")
+    val fg by animateColorAsState(if (focused) c.red else c.text, tween(200), label = "wellFg")
+    Box(Modifier.size(40.dp).clip(CircleShape).background(bg), contentAlignment = Alignment.Center) {
+        Icon(icon, null, tint = fg, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -354,3 +512,40 @@ fun CRow(
 
 @Composable
 fun VSpace(h: Dp) = Spacer(Modifier.height(h))
+
+/**
+ * Toolwand-style page backdrop: paper base, a 48dp hairline grid that fades out from the
+ * top, and a soft signal-red glow bleeding in from above the status bar.
+ */
+@Composable
+fun GridGlowBackdrop(modifier: Modifier = Modifier) {
+    val c = LocalCeramic.current
+    val glow = c.red.copy(alpha = if (c.isDark) 0.20f else 0.14f)
+    Canvas(modifier.fillMaxSize()) {
+        val w = size.width; val h = size.height
+        drawRect(c.bg)
+        val step = 48.dp.toPx()
+        val line = if (c.isDark) Color.White.copy(alpha = 0.10f) else c.text.copy(alpha = 0.10f)
+        val fadeH = h * 0.55f
+        val cx = w * 0.5f
+        fun a(x: Float, y: Float): Float {
+            val nx = (x - cx) / (w * 0.75f); val ny = y / fadeH
+            val d = kotlin.math.sqrt(nx * nx + ny * ny)
+            return ((1f - d) / 0.6f).coerceIn(0f, 1f) * 1f
+        }
+        var y = 0f
+        while (y < fadeH) {
+            drawLine(Brush.horizontalGradient(listOf(line.copy(alpha = 0f), line.copy(alpha = line.alpha * a(cx, y)), line.copy(alpha = 0f))), Offset(0f, y), Offset(w, y), 1f)
+            y += step
+        }
+        var x = (cx % step)
+        while (x < w) {
+            drawLine(Brush.verticalGradient(listOf(line.copy(alpha = line.alpha * a(x, 0f)), line.copy(alpha = 0f)), endY = fadeH), Offset(x, 0f), Offset(x, fadeH), 1f)
+            x += step
+        }
+        drawOval(
+            Brush.radialGradient(listOf(glow, Color.Transparent), center = Offset(cx, -h * 0.06f), radius = w * 0.95f),
+            topLeft = Offset(cx - w * 1.1f, -h * 0.35f), size = androidx.compose.ui.geometry.Size(w * 2.2f, h * 0.7f),
+        )
+    }
+}

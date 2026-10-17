@@ -1,5 +1,8 @@
 package com.salah.callblocker.ui
 
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import com.salah.callblocker.ui.kit.glass
 import android.Manifest
 import android.app.role.RoleManager
 import android.os.Build
@@ -44,16 +47,19 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.List
+import com.salah.callblocker.ui.kit.globStarIcon
+import androidx.compose.material.icons.outlined.Settings as OutlinedSettings
+import androidx.compose.material.icons.outlined.Home as OutlinedHome
+import androidx.compose.material.icons.outlined.WatchLater as OutlinedWatchLater
+import androidx.compose.material.icons.rounded.WatchLater
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DeleteOutline
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.PhoneDisabled
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.SpaceDashboard
+import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.Call
@@ -72,6 +78,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -118,11 +136,13 @@ import com.salah.callblocker.ui.theme.CeramicLight
 import com.salah.callblocker.ui.theme.LocalCeramic
 import kotlinx.coroutines.launch
 
-private enum class Tab(val title: String, val icon: ImageVector) {
-    HOME("Home", Icons.Rounded.SpaceDashboard),
-    RULES("Rules", Icons.AutoMirrored.Rounded.List),
-    LOG("Log", Icons.Rounded.History),
-    SETTINGS("Settings", Icons.Rounded.Settings),
+
+/** [icon] is the filled glyph for the active tab, [outline] the outlined one for the rest. */
+private enum class Tab(val title: String, val icon: ImageVector, val outline: ImageVector) {
+    HOME("Home", Icons.Rounded.Home, Icons.Outlined.OutlinedHome),
+    RULES("Rules", globStarIcon(3f), globStarIcon(1.7f)),
+    LOG("Log", Icons.Rounded.WatchLater, Icons.Outlined.OutlinedWatchLater),
+    SETTINGS("Settings", Icons.Rounded.Settings, Icons.Outlined.OutlinedSettings),
 }
 
 private enum class Phase { SPLASH, ONBOARD, APP }
@@ -140,10 +160,21 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.DARK -> true
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
             }
+            // Android 12+: tell the system our theme so its launch splash (drawn before
+            // any app code runs) uses the matching day/night background next time.
+            LaunchedEffect(themeMode) {
+                if (Build.VERSION.SDK_INT >= 31) getSystemService(android.app.UiModeManager::class.java)?.setApplicationNightMode(
+                    when (themeMode) {
+                        ThemeMode.LIGHT -> android.app.UiModeManager.MODE_NIGHT_NO
+                        ThemeMode.DARK -> android.app.UiModeManager.MODE_NIGHT_YES
+                        ThemeMode.SYSTEM -> android.app.UiModeManager.MODE_NIGHT_AUTO
+                    },
+                )
+            }
             var phase by rememberSaveable { mutableStateOf(Phase.SPLASH) }
             val roleState = rememberRoleState()
             // Status/nav bar icons follow the app's theme (splash + onboarding are always light).
-            val lightBars = phase != Phase.APP || !dark
+            val lightBars = if (phase == Phase.ONBOARD) true else !dark
             SideEffect {
                 WindowCompat.getInsetsController(window, window.decorView).apply {
                     isAppearanceLightStatusBars = lightBars
@@ -152,9 +183,10 @@ class MainActivity : ComponentActivity() {
             }
             CallBlockerTheme(darkTheme = dark) {
                 Surface(Modifier.fillMaxSize(), color = LocalCeramic.current.bg) {
+                    if (phase == Phase.APP) com.salah.callblocker.ui.kit.GridGlowBackdrop()
                     Crossfade(phase, animationSpec = tween(450), label = "phase") { p ->
                         when (p) {
-                            Phase.SPLASH -> SplashScreen(onFinished = {
+                            Phase.SPLASH -> SplashScreen(dark = dark, onFinished = {
                                 phase = if (settings.onboarded.value) Phase.APP else Phase.ONBOARD
                             })
                             // Splash and onboarding are always the light ceramic look.
@@ -230,19 +262,24 @@ private fun GlobberApp(role: RoleState) {
 
     BackHandler(enabled = tab != Tab.HOME) { tab = Tab.HOME }
 
-    CompositionLocalProvider(LocalAlerts provides alerts) {
+    CompositionLocalProvider(LocalAlerts provides alerts, com.salah.callblocker.ui.kit.LocalHaze provides remember { HazeState() }) {
         val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
         val bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 96.dp
         val pad = PaddingValues(top = top, bottom = bottom)
+        val navHaze = com.salah.callblocker.ui.kit.LocalHaze.current
         Box(Modifier.fillMaxSize()) {
-            AnimatedContent(tab, transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(150)) }, label = "tab") { t ->
+            AnimatedContent(tab, transitionSpec = {
+                val dir = if (targetState.ordinal > initialState.ordinal) 1 else -1
+                (fadeIn(tween(260, delayMillis = 60)) + androidx.compose.animation.slideInHorizontally(tween(320, easing = androidx.compose.animation.core.FastOutSlowInEasing)) { dir * it / 14 }) togetherWith
+                    (fadeOut(tween(140)) + androidx.compose.animation.slideOutHorizontally(tween(240)) { -dir * it / 14 })
+            }, label = "tab") { t ->
                 when (t) {
                     Tab.HOME -> DashboardScreen(
                         roleHeld = role.held, allowList = allow, onRequestRole = role.request,
                         onOpenRules = { tab = Tab.RULES }, onOpenLog = { tab = Tab.LOG },
                         onOpenRule = { ruleDraft = it.toDraft() }, onOpenCall = { openCall = it }, contentPadding = pad,
                     )
-                    Tab.RULES -> RulesScreen(onEdit = { ruleDraft = it?.toDraft() ?: RuleDraft() }, contentPadding = pad, vm = rulesVm)
+                    Tab.RULES -> RulesScreen(onEdit = { ruleDraft = it?.toDraft() ?: RuleDraft() }, onDelete = { deleteRule = it }, contentPadding = pad, vm = rulesVm)
                     Tab.LOG -> LogScreen(allow, onOpenCall = { openCall = it }, onConfirmClear = { n, ok -> confirm = "$n" to ok }, contentPadding = pad)
                     Tab.SETTINGS -> SettingsScreen(
                         vm = settingsVm, roleHeld = role.held, ruleCount = rules.size, onRequestRole = role.request,
@@ -257,7 +294,7 @@ private fun GlobberApp(role: RoleState) {
                     )
                 }
             }
-            BottomNav(tab, { tab = it }, Modifier.align(Alignment.BottomCenter))
+            BottomNav(tab, { tab = it }, navHaze, Modifier.align(Alignment.BottomCenter))
             AlertHost(alerts)
         }
 
@@ -310,32 +347,68 @@ private fun GlobberApp(role: RoleState) {
     }
 }
 
-/** Floating pill nav with a sliding ink indicator. */
+/**
+ * macOS-style dock: compact glass bar centred at the bottom, square icon tiles,
+ * a dot under the active tab, and dock magnification while a tile is pressed
+ * (the pressed tile grows and lifts, its neighbours grow a little).
+ */
 @Composable
-private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
+private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, haze: HazeState, modifier: Modifier = Modifier) {
     val c = LocalCeramic.current
-    Box(modifier.fillMaxWidth().navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-        BoxWithConstraints(
-            Modifier.fillMaxWidth().height(68.dp).shadow(24.dp, CircleShape).clip(CircleShape)
-                .background(c.surface.copy(alpha = 0.96f)).border(1.dp, c.hair, CircleShape).padding(6.dp),
+    var pressed by remember { mutableStateOf<Int?>(null) }
+    val shape = RoundedCornerShape(percent = 50)
+    Box(modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 14.dp), contentAlignment = Alignment.BottomCenter) {
+        Box {
+        // Frosted glass sits on its own layer so magnified tiles can still rise above the bar.
+        Box(
+            Modifier.matchParentSize()
+                .shadow(28.dp, shape, ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.3f))
+                .clip(shape)
+                .glass(haze, if (c.isDark) 0.45f else 0.5f)
+                .border(1.dp, if (c.isDark) Color.White.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.9f), shape),
+        )
+        Row(
+            Modifier
+                .padding(start = 14.dp, end = 14.dp, top = 10.dp, bottom = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Bottom,
         ) {
-            val w = maxWidth / Tab.entries.size
-            val x by animateDpAsState(w * current.ordinal, spring(dampingRatio = 0.7f, stiffness = 500f), label = "ind")
-            Box(Modifier.offset(x = x).width(w).fillMaxHeight().clip(CircleShape).background(c.ink))
-            Row(Modifier.fillMaxSize()) {
-                Tab.entries.forEach { t ->
-                    val on = t == current
-                    Column(
-                        Modifier.width(w).fillMaxHeight().clip(CircleShape)
-                            .clickable(remember { MutableInteractionSource() }, null) { onSelect(t) },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),
+            Tab.entries.forEachIndexed { i, t ->
+                val on = t == current
+                val tileBg by androidx.compose.animation.animateColorAsState(if (on) c.ink else c.surface2, tween(220), label = "tile")
+                val tileFg by androidx.compose.animation.animateColorAsState(if (on) c.onInk else c.text, tween(220), label = "tileFg")
+                val haptic = androidx.compose.ui.platform.LocalHapticFeedback.current
+                val dist = pressed?.let { kotlin.math.abs(it - i) }
+                val target = when (dist) { 0 -> 1.28f; 1 -> 1.1f; else -> 1f }
+                val scale by animateFloatAsState(target, spring(dampingRatio = 0.55f, stiffness = 420f), label = "mag")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        Modifier
+                            .graphicsLayer {
+                                scaleX = scale; scaleY = scale
+                                transformOrigin = TransformOrigin(0.5f, 1f)
+                                translationY = -(scale - 1f) * 18.dp.toPx()
+                            }
+                            .size(52.dp)
+                            .shadow(if (on) 10.dp else 3.dp, CircleShape)
+                            .clip(CircleShape)
+                            .background(tileBg)
+                            .pointerInput(i) {
+                                detectTapGestures(
+                                    onPress = { pressed = i; tryAwaitRelease(); pressed = null },
+                                    onTap = { if (!on) haptic.performHapticFeedback(androidx.compose.ui.hapticfeedback.HapticFeedbackType.TextHandleMove); onSelect(t) },
+                                )
+                            }
+                            .semantics { contentDescription = t.title; role = Role.Tab; selected = on },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Icon(t.icon, t.title, tint = if (on) c.onInk else c.text2, modifier = Modifier.size(22.dp))
-                        Text(t.title, style = CType.label, color = if (on) c.onInk else c.text2)
+                        Icon(if (on) t.icon else t.outline, null, tint = tileFg, modifier = Modifier.size(24.dp))
                     }
+                    Box(Modifier.height(6.dp))
+                    Box(Modifier.size(5.dp).clip(CircleShape).background(if (on) c.text else Color.Transparent))
                 }
             }
+        }
         }
     }
 }

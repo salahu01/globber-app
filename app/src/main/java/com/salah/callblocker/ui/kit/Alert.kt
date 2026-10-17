@@ -78,7 +78,7 @@ fun AlertHost(alerts: Alerts) {
         ) {
             val m = msg ?: return@AnimatedVisibility
             val c = LocalCeramic.current
-            val tint = when (m.tone) { Tone.Red -> c.red; Tone.Ok -> c.ok; Tone.Info -> Color(0xFF55606E); Tone.Ink, Tone.Neutral -> Color(0xFF3A3A3D) }
+            val tint = when (m.tone) { Tone.Red -> c.red; Tone.Ok -> c.ok; Tone.Info -> c.text2; Tone.Ink, Tone.Neutral -> c.text }
             Row(
                 Modifier.fillMaxWidth().shadow(18.dp, RoundedCornerShape(33.dp)).clip(RoundedCornerShape(33.dp)).background(Color(0xFF0A0A0A))
                     .clickable { alerts.dismiss() }.padding(horizontal = 12.dp, vertical = 12.dp),

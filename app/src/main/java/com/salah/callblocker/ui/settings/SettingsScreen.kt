@@ -1,5 +1,8 @@
 package com.salah.callblocker.ui.settings
 
+import com.salah.callblocker.ui.kit.collapse
+import com.salah.callblocker.ui.kit.largeTitle
+import com.salah.callblocker.ui.kit.cardSurface
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import dev.chrisbanes.haze.hazeSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -70,18 +74,20 @@ fun SettingsScreen(
     val theme by vm.themeMode.collectAsStateWithLifecycle()
     val allow by vm.allowList.collectAsStateWithLifecycle()
 
+    val scroll = rememberScrollState()
+    val haze = com.salah.callblocker.ui.kit.LocalHaze.current
+    val collapsed by scroll.collapse()
+    Box(Modifier.fillMaxSize()) {
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+        Modifier.fillMaxSize().hazeSource(haze).verticalScroll(scroll)
             .padding(start = Gutter, end = Gutter, top = contentPadding.calculateTopPadding() + 8.dp, bottom = contentPadding.calculateBottomPadding() + 16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text("Settings", style = CType.title, color = c.text)
+        Text("Settings", style = CType.title, color = c.text, modifier = Modifier.largeTitle { collapsed })
 
         // protection card
         Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(24.dp))
-                .background(Brush.radialGradient(listOf(if (c.isDark) c.surface2 else c.surface, c.surface)))
-                .background(c.surface.copy(alpha = 0f)).padding(16.dp),
+            Modifier.fillMaxWidth().cardSurface().padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -92,7 +98,7 @@ fun SettingsScreen(
                 }
             }
             CButton(if (roleHeld) "Change screening app" else "Set as call screening app", onRequestRole,
-                style = if (roleHeld) BtnStyle.Ghost else BtnStyle.Ink, modifier = Modifier.fillMaxWidth())
+                style = if (roleHeld) BtnStyle.Ghost else BtnStyle.Danger, modifier = Modifier.fillMaxWidth())
         }
 
         SectionLabel("Calls")
@@ -138,5 +144,7 @@ fun SettingsScreen(
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         VSpace(4.dp)
         Box(Modifier)
+    }
+    com.salah.callblocker.ui.kit.SliverBar("Settings", collapsed, haze, contentPadding.calculateTopPadding())
     }
 }

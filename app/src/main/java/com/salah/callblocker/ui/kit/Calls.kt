@@ -92,3 +92,37 @@ fun BlockedCallRow(call: BlockedCall, allowed: Boolean, onClick: () -> Unit) {
         }
     }
 }
+
+/** Pattern text with glob wildcards (*) and regex metacharacters highlighted in signal red. */
+@Composable
+fun globText(pattern: String): androidx.compose.ui.text.AnnotatedString {
+    val red = LocalCeramic.current.red
+    return androidx.compose.ui.text.buildAnnotatedString {
+        pattern.forEach { ch ->
+            if (ch == '*' || ch == '^' || ch == '$' || ch == '?') {
+                pushStyle(androidx.compose.ui.text.SpanStyle(color = red)); append(ch); pop()
+            } else append(ch)
+        }
+    }
+}
+
+/** Tiny 7-bar sparkline; last bar (today) in red. */
+@Composable
+fun Spark(values: List<Int>, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+    val c = LocalCeramic.current
+    val max = (values.maxOrNull() ?: 0).coerceAtLeast(1)
+    androidx.compose.foundation.Canvas(modifier) {
+        val n = values.size.coerceAtLeast(1)
+        val gap = size.width * 0.08f
+        val w = (size.width - gap * (n - 1)) / n
+        values.forEachIndexed { i, v ->
+            val h = (0.12f + 0.88f * v / max) * size.height
+            drawRoundRect(
+                color = if (i == n - 1 && v > 0) c.red else if (v > 0) c.text2.copy(alpha = 0.55f) else c.line,
+                topLeft = androidx.compose.ui.geometry.Offset(i * (w + gap), size.height - h),
+                size = androidx.compose.ui.geometry.Size(w, h),
+                cornerRadius = androidx.compose.ui.geometry.CornerRadius(w / 2),
+            )
+        }
+    }
+}
