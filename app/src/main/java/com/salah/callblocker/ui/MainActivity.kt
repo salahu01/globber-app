@@ -268,7 +268,7 @@ private fun GlobberApp(role: RoleState) {
                         onOpenRules = { tab = Tab.RULES }, onOpenLog = { tab = Tab.LOG },
                         onOpenRule = { ruleDraft = it.toDraft() }, onOpenCall = { openCall = it }, contentPadding = pad,
                     )
-                    Tab.RULES -> RulesScreen(onEdit = { ruleDraft = it?.toDraft() ?: RuleDraft() }, contentPadding = pad, vm = rulesVm)
+                    Tab.RULES -> RulesScreen(onEdit = { ruleDraft = it?.toDraft() ?: RuleDraft() }, onDelete = { deleteRule = it }, contentPadding = pad, vm = rulesVm)
                     Tab.LOG -> LogScreen(allow, onOpenCall = { openCall = it }, onConfirmClear = { n, ok -> confirm = "$n" to ok }, contentPadding = pad)
                     Tab.SETTINGS -> SettingsScreen(
                         vm = settingsVm, roleHeld = role.held, ruleCount = rules.size, onRequestRole = role.request,
