@@ -417,3 +417,9 @@ body::before{background:radial-gradient(50% 45% at 20% 30%,#2c3a08,transparent 7
 .bar i{background:var(--acc)}
 body::before{background:radial-gradient(50% 45% at 20% 30%,#3a2f2a,transparent 70%),radial-gradient(45% 40% at 80% 75%,#2a2422,transparent 70%),linear-gradient(180deg,#151413,#0c0b0b)}
 .floor::before{display:none}.floor{border-top:0;background:linear-gradient(180deg,var(--floor),transparent)}
+/* Today KPI: same surface as siblings, red number as the highlight */
+.kpi.hot{background:var(--surface);color:var(--text)}
+.kpi.hot .mute{color:var(--text-2)}
+.kpi.hot .tile{background:var(--warn-bg);color:var(--warn-ink)}
+.phone[data-theme="dark"] .kpi.hot .tile{background:var(--warn-bg)}
+.kpi.hot .t-num-l{color:var(--red)}
