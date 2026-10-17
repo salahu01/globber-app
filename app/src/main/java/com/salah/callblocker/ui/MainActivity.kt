@@ -72,6 +72,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -310,30 +322,57 @@ private fun GlobberApp(role: RoleState) {
     }
 }
 
-/** Floating pill nav with a sliding ink indicator. */
+/**
+ * macOS-style dock: compact glass bar centred at the bottom, square icon tiles,
+ * a dot under the active tab, and dock magnification while a tile is pressed
+ * (the pressed tile grows and lifts, its neighbours grow a little).
+ */
 @Composable
 private fun BottomNav(current: Tab, onSelect: (Tab) -> Unit, modifier: Modifier = Modifier) {
     val c = LocalCeramic.current
-    Box(modifier.fillMaxWidth().navigationBarsPadding().padding(start = 16.dp, end = 16.dp, bottom = 16.dp)) {
-        BoxWithConstraints(
-            Modifier.fillMaxWidth().height(68.dp).shadow(24.dp, CircleShape).clip(CircleShape)
-                .background(c.surface.copy(alpha = 0.96f)).border(1.dp, c.hair, CircleShape).padding(6.dp),
+    var pressed by remember { mutableStateOf<Int?>(null) }
+    val shape = RoundedCornerShape(26.dp)
+    Box(modifier.fillMaxWidth().navigationBarsPadding().padding(bottom = 14.dp), contentAlignment = Alignment.BottomCenter) {
+        Row(
+            Modifier
+                .shadow(28.dp, shape, ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.3f))
+                // background(shape) instead of clip so magnified tiles can rise above the bar
+                .background(c.surface.copy(alpha = if (c.isDark) 0.9f else 0.82f), shape)
+                .border(1.dp, if (c.isDark) Color.White.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.9f), shape)
+                .padding(start = 10.dp, end = 10.dp, top = 10.dp, bottom = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.Bottom,
         ) {
-            val w = maxWidth / Tab.entries.size
-            val x by animateDpAsState(w * current.ordinal, spring(dampingRatio = 0.7f, stiffness = 500f), label = "ind")
-            Box(Modifier.offset(x = x).width(w).fillMaxHeight().clip(CircleShape).background(c.ink))
-            Row(Modifier.fillMaxSize()) {
-                Tab.entries.forEach { t ->
-                    val on = t == current
-                    Column(
-                        Modifier.width(w).fillMaxHeight().clip(CircleShape)
-                            .clickable(remember { MutableInteractionSource() }, null) { onSelect(t) },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(1.dp, Alignment.CenterVertically),
+            Tab.entries.forEachIndexed { i, t ->
+                val on = t == current
+                val dist = pressed?.let { kotlin.math.abs(it - i) }
+                val target = when (dist) { 0 -> 1.28f; 1 -> 1.1f; else -> 1f }
+                val scale by animateFloatAsState(target, spring(dampingRatio = 0.55f, stiffness = 420f), label = "mag")
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        Modifier
+                            .graphicsLayer {
+                                scaleX = scale; scaleY = scale
+                                transformOrigin = TransformOrigin(0.5f, 1f)
+                                translationY = -(scale - 1f) * 18.dp.toPx()
+                            }
+                            .size(52.dp)
+                            .shadow(if (on) 10.dp else 3.dp, RoundedCornerShape(15.dp))
+                            .clip(RoundedCornerShape(15.dp))
+                            .background(if (on) c.ink else c.surface2)
+                            .pointerInput(i) {
+                                detectTapGestures(
+                                    onPress = { pressed = i; tryAwaitRelease(); pressed = null },
+                                    onTap = { onSelect(t) },
+                                )
+                            }
+                            .semantics { contentDescription = t.title; role = Role.Tab; selected = on },
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Icon(t.icon, t.title, tint = if (on) c.onInk else c.text2, modifier = Modifier.size(22.dp))
-                        Text(t.title, style = CType.label, color = if (on) c.onInk else c.text2)
+                        Icon(t.icon, null, tint = if (on) c.onInk else c.text, modifier = Modifier.size(24.dp))
                     }
+                    Box(Modifier.height(6.dp))
+                    Box(Modifier.size(5.dp).clip(CircleShape).background(if (on) c.text else Color.Transparent))
                 }
             }
         }
