@@ -1,17 +1,12 @@
 package com.salah.callblocker.ui.onboarding
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,7 +14,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,29 +37,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import com.salah.callblocker.R
 import com.salah.callblocker.ui.kit.BtnStyle
 import com.salah.callblocker.ui.kit.CButton
 import com.salah.callblocker.ui.kit.Gutter
 import com.salah.callblocker.ui.theme.Brand
 import com.salah.callblocker.ui.theme.CType
 
-private data class Page(val kicker: String, val title: String, val body: String, val cta: String, val art: Int)
+private data class Page(val kicker: String, val title: String, val body: String, val cta: String)
 
 private val PAGES = listOf(
     Page("Before", "Spam calls, all day",
         "Telemarketers rotate through hundreds of numbers. Blocking them one by one never ends.",
-        "Show me the fix", R.drawable.onboard_before),
+        "Show me the fix"),
     Page("Setup", "One pattern stops them all",
         "Add a rule like +91 140*. Set Globber as your call screening app, and it rejects every match before it rings.",
-        "Set as call screening app", R.drawable.onboard_setup),
+        "Set as call screening app"),
     Page("After", "Your phone, quiet again",
         "Spam is stopped silently. Real people still get through. Everything stays on your phone.",
-        "Start blocking", R.drawable.onboard_after),
+        "Start blocking"),
 )
 
 /**
@@ -108,14 +98,9 @@ fun OnboardingScreen(roleHeld: Boolean, onRequestRole: () -> Unit, onDone: () ->
             modifier = Modifier.weight(1f),
         ) { p ->
             val pg = PAGES[p]
-            val bob by rememberInfiniteTransition(label = "bob").animateFloat(0f, 1f, infiniteRepeatable(tween(3600), RepeatMode.Reverse), label = "y")
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Spacer(Modifier.height(8.dp))
-                Image(
-                    painterResource(pg.art), null,
-                    contentScale = ContentScale.Fit,
-                    modifier = Modifier.fillMaxWidth().aspectRatio(360f / 330f).graphicsLayer { translationY = -bob * 6.dp.toPx() },
-                )
+                OnboardingScene(p, Modifier.fillMaxWidth())
                 Text("${p + 1} · ${pg.kicker}".uppercase(), style = CType.label.copy(letterSpacing = CType.label.fontSize * 0.1f), color = Brand.red)
                 Text(pg.title, style = CType.title, color = ink)
                 Text(pg.body, style = CType.body, color = mute)
