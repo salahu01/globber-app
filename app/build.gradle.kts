@@ -15,14 +15,14 @@ val keystoreProperties = Properties().apply {
 
 android {
     namespace = "com.salah.callblocker"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.salah.callblocker"
+        applicationId = "app.globber"
         minSdk = 29
-        targetSdk = 35
-        versionCode = 6
-        versionName = "1.0.5"
+        targetSdk = 36
+        versionCode = 7
+        versionName = "1.0.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

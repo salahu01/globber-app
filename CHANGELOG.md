@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-10-17
+
+### Changed
+- Target and compile against Android 16 (API 36) to meet Google Play's target API requirement.
+- Application ID is now `app.globber` for the Google Play release. The source
+  package (`com.salah.callblocker`) is unchanged. Not an in-place upgrade from
+  earlier sideloaded builds: uninstall the old app first.
+
 ## [1.0.5] - 2026-07-24
 
 ### Fixed
