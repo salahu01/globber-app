@@ -17,7 +17,7 @@ participating, you are expected to uphold it.
 ## Building
 
 ```bash
-git clone https://github.com/salahu01/Globber.git
+git clone https://github.com/salahu01/globber-app.git
 cd Globber
 
 # Debug build (installable, signed with the debug key)
